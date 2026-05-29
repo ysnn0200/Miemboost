@@ -38,8 +38,12 @@ Rules:
 
 ## Phase 3: Reversible Actions
 
+Status: in progress.
+
 Deliverables:
 
+- Execution model with mandatory snapshot creation. Started.
+- Action handler registry. Started.
 - Power plan switch and restore.
 - Process priority change and restore.
 - User-approved background app pause/close with restore record.
