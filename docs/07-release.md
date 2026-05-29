@@ -47,3 +47,17 @@ The zip package is written to:
 ```text
 artifacts\packages\Miemboost-win-x64.zip
 ```
+
+## GitHub Actions Artifact
+
+Every push to `main` runs CI and uploads a downloadable artifact named:
+
+```text
+Miemboost-win-x64
+```
+
+It contains:
+
+```text
+Miemboost-win-x64.zip
+```
