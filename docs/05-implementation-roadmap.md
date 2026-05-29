@@ -26,6 +26,7 @@ Deliverables:
 - Network adapter summary. Started.
 - Ping, jitter, and packet loss probe. Started.
 - DNS response probe. Started.
+- Diagnostic analyzer for UI-ready findings. Started.
 
 Rules:
 
