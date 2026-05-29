@@ -16,6 +16,26 @@ public sealed class DefaultPlanFactoryTests
     }
 
     [Fact]
+    public void Create_ConservativeModeIncludesOnlySafeDefaultActions()
+    {
+        var plan = new DefaultPlanFactory().Create(BoostMode.Conservative, gameProcessId: 123);
+
+        Assert.Contains(plan.Actions, action => action.Kind == OptimizationActionKind.PowerPlanSwitch);
+        Assert.Contains(plan.Actions, action => action.Kind == OptimizationActionKind.NetworkDiagnostics);
+        Assert.DoesNotContain(plan.Actions, action => action.Kind == OptimizationActionKind.StandbyMemoryRelease);
+        Assert.DoesNotContain(plan.Actions, action => action.Kind == OptimizationActionKind.DnsCacheFlush);
+        Assert.DoesNotContain(plan.Actions, action => action.Kind == OptimizationActionKind.ProcessPriorityChange);
+    }
+
+    [Fact]
+    public void Create_BalancedModeIncludesDnsCacheFlush()
+    {
+        var plan = new DefaultPlanFactory().Create(BoostMode.Balanced);
+
+        Assert.Contains(plan.Actions, action => action.Kind == OptimizationActionKind.DnsCacheFlush);
+    }
+
+    [Fact]
     public void Create_IncludesParameterizedProcessPriorityActionWithGameProcess()
     {
         var plan = new DefaultPlanFactory().Create(BoostMode.Balanced, gameProcessId: 123);

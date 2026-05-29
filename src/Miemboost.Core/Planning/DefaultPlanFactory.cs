@@ -16,7 +16,8 @@ public sealed class DefaultPlanFactory
         var builder = new OptimizationPlanBuilder(new SafetyPolicy())
             .Add(DefaultActionCatalog.PowerPlanSwitch)
             .Add(DefaultActionCatalog.ReleaseStandbyMemory)
-            .Add(DefaultActionCatalog.NetworkDiagnostics);
+            .Add(DefaultActionCatalog.NetworkDiagnostics)
+            .Add(DefaultActionCatalog.FlushDnsCache);
 
         if (gameProcessId is > 0)
         {

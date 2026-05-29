@@ -34,6 +34,16 @@ public sealed class SafetyPolicyTests
     }
 
     [Fact]
+    public void Evaluate_BlocksBalancedActionsInConservativeMode()
+    {
+        var decision = new SafetyPolicy().Evaluate(
+            DefaultActionCatalog.ReleaseStandbyMemory,
+            BoostMode.Conservative);
+
+        Assert.False(decision.IsAllowed);
+    }
+
+    [Fact]
     public void Evaluate_BlocksAggressiveActionOutsideAggressiveMode()
     {
         var action = new OptimizationActionDescriptor(

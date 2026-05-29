@@ -55,7 +55,8 @@ public partial class MainWindow : Window
         var versionInfo = AppVersionReader.Read(Assembly.GetExecutingAssembly());
         VersionText.Text = $"{versionInfo.ProductName} {versionInfo.InformationalVersion}";
 
-        var powerPlanManager = new WindowsPowerPlanManager();
+        var commandRunner = new ProcessWindowsCommandRunner();
+        var powerPlanManager = new WindowsPowerPlanManager(commandRunner);
         var processPriorityManager = new WindowsProcessPriorityManager();
         var standbyMemoryManager = new WindowsStandbyMemoryManager();
         _diagnosticsService = new DiagnosticsService(
@@ -68,7 +69,8 @@ public partial class MainWindow : Window
             new ProcessPriorityActionHandler(processPriorityManager),
             new BackgroundAppPauseActionHandler(processPriorityManager),
             new StandbyMemoryReleaseActionHandler(standbyMemoryManager),
-            new NetworkDiagnosticsActionHandler(_diagnosticsService)
+            new NetworkDiagnosticsActionHandler(_diagnosticsService),
+            new DnsCacheFlushActionHandler(commandRunner)
         ]);
 
         _snapshotStore = new JsonSystemSnapshotStore(GetSnapshotDirectoryPath());

@@ -73,4 +73,13 @@ public static class DefaultActionCatalog
         RiskLevel: RiskLevel.Safe,
         RequiresElevation: false,
         CanRestore: true);
+
+    public static readonly OptimizationActionDescriptor FlushDnsCache = new(
+        Id: "network.flush-dns-cache",
+        Title: "Flush DNS cache",
+        Description: "Clear the local Windows DNS resolver cache once before the game session starts.",
+        Kind: OptimizationActionKind.DnsCacheFlush,
+        RiskLevel: RiskLevel.Balanced,
+        RequiresElevation: false,
+        CanRestore: false);
 }

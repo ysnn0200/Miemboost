@@ -26,6 +26,11 @@ public sealed class SafetyPolicy
             return SafetyDecision.Blocked(action.Id, "Aggressive actions require the explicit Aggressive mode.");
         }
 
+        if (action.RiskLevel == RiskLevel.Balanced && mode == BoostMode.Conservative)
+        {
+            return SafetyDecision.Blocked(action.Id, "Balanced actions require Balanced or Aggressive mode.");
+        }
+
         if (!action.CanRestore && action.RiskLevel == RiskLevel.Aggressive)
         {
             return SafetyDecision.Blocked(action.Id, "Non-restorable aggressive system changes are not allowed.");
