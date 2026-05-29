@@ -32,6 +32,7 @@ public partial class MainWindow : Window
     private int? _selectedGameProcessId;
     private IReadOnlyList<ProcessSnapshot> _latestProcesses = [];
     private IReadOnlyList<BackgroundCandidateChoice> _backgroundCandidateChoices = [];
+    private IReadOnlyList<GameProfileChoice> _gameProfileChoices = [];
     private string? _activeGameProfileId;
     private GameProfile? _activeGameProfile;
 
@@ -255,6 +256,7 @@ public partial class MainWindow : Window
         _activeGameProfileId = profile.Id;
         _activeGameProfile = profile;
         await RefreshGameLibraryAsync();
+        ShowBoostPreview();
     }
 
     private async void AllowBackgroundCandidate_Click(object sender, RoutedEventArgs e)
@@ -353,15 +355,42 @@ public partial class MainWindow : Window
         GameLibraryList.Items.Clear();
         if (profiles.Count == 0)
         {
+            GameLibraryList.ItemsSource = null;
             GameLibraryList.Items.Add("还没有保存的游戏。");
             return;
         }
 
-        foreach (var profile in profiles.Take(5))
+        _gameProfileChoices = profiles
+            .Take(8)
+            .Select(profile => new GameProfileChoice(
+                profile.Id,
+                $"{profile.Name}  {profile.RecommendedMode}  自动恢复 {(profile.AutoRestoreOnExit ? "开" : "关")}  允许暂停 {profile.AllowedBackgroundProcessNames.Count}"))
+            .ToArray();
+
+        GameLibraryList.Items.Clear();
+        GameLibraryList.ItemsSource = _gameProfileChoices;
+        GameLibraryList.SelectedItem =
+            _gameProfileChoices.FirstOrDefault(choice => choice.ProfileId == _activeGameProfileId)
+            ?? _gameProfileChoices.FirstOrDefault();
+    }
+
+    private async void GameLibraryList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (GameLibraryList.SelectedItem is not GameProfileChoice choice)
         {
-            GameLibraryList.Items.Add(
-                $"{profile.Name}  {profile.RecommendedMode}  自动恢复 {(profile.AutoRestoreOnExit ? "开" : "关")}  允许暂停 {profile.AllowedBackgroundProcessNames.Count}");
+            return;
         }
+
+        var profiles = await _gameProfileStore.ListAsync();
+        var profile = profiles.FirstOrDefault(profileItem => profileItem.Id == choice.ProfileId);
+        if (profile is null)
+        {
+            return;
+        }
+
+        _activeGameProfile = profile;
+        _activeGameProfileId = profile.Id;
+        ShowBoostPreview();
     }
 
     private void Minimize_Click(object sender, RoutedEventArgs e)
@@ -461,4 +490,6 @@ public partial class MainWindow : Window
     private sealed record ProcessChoice(int? ProcessId, string DisplayName);
 
     private sealed record BackgroundCandidateChoice(string ProcessName, string DisplayName);
+
+    private sealed record GameProfileChoice(string ProfileId, string DisplayName);
 }
