@@ -44,6 +44,7 @@ Deliverables:
 
 - Execution model with mandatory snapshot creation. Started.
 - Action handler registry. Started.
+- JSON snapshot persistence. Started.
 - Power plan switch and restore.
 - Process priority change and restore.
 - User-approved background app pause/close with restore record.

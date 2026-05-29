@@ -14,5 +14,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Miemboost.Core\Miemboost.Core.csproj" />
+    <ProjectReference Include="..\Miemboost.Windows\Miemboost.Windows.csproj" />
   </ItemGroup>
 </Project>

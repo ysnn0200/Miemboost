@@ -113,6 +113,18 @@ public sealed class OptimizationExecutorTests
             SavedSnapshotId = snapshot.Id;
             return Task.CompletedTask;
         }
+
+        public Task<SystemSnapshot?> GetAsync(string snapshotId, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<SystemSnapshot?>(null);
+        }
+
+        public Task<IReadOnlyList<SystemSnapshot>> ListRecentAsync(
+            int limit = 20,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<IReadOnlyList<SystemSnapshot>>([]);
+        }
     }
 
     private sealed class RecordingHandler(string actionId) : IOptimizationActionHandler
