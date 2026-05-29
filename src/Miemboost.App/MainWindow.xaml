@@ -234,10 +234,26 @@
                                     <RowDefinition Height="Auto" />
                                     <RowDefinition Height="*" />
                                 </Grid.RowDefinitions>
-                                <TextBlock Text="Boost 预览" Foreground="{StaticResource TextPrimaryBrush}" FontSize="18" FontWeight="SemiBold" />
-                                <ListBox x:Name="PlanList" Grid.Row="1" Margin="0,14,0,0"
-                                         Background="Transparent" BorderThickness="0"
-                                         Foreground="{StaticResource TextPrimaryBrush}" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Boost 预览" Foreground="{StaticResource TextPrimaryBrush}" FontSize="18" FontWeight="SemiBold" />
+                                    <TextBlock Grid.Column="1" Text="优化记录" Foreground="{StaticResource TextPrimaryBrush}" FontSize="18" FontWeight="SemiBold" />
+                                </Grid>
+                                <Grid Grid.Row="1" Margin="0,14,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <ListBox x:Name="PlanList"
+                                             Background="Transparent" BorderThickness="0"
+                                             Foreground="{StaticResource TextPrimaryBrush}" />
+                                    <ListBox x:Name="HistoryList" Grid.Column="1" Margin="12,0,0,0"
+                                             Background="Transparent" BorderThickness="0"
+                                             Foreground="{StaticResource TextPrimaryBrush}" />
+                                </Grid>
                             </Grid>
                         </Border>
                     </Grid>

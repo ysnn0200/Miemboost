@@ -2,11 +2,13 @@ using System.IO;
 using System.Windows;
 using Miemboost.Core.Diagnostics;
 using Miemboost.Core.Execution;
+using Miemboost.Core.History;
 using Miemboost.Core.Models;
 using Miemboost.Core.Planning;
 using Miemboost.Core.Safety;
 using Miemboost.Windows.Diagnostics;
 using Miemboost.Windows.Execution;
+using Miemboost.Windows.History;
 using Miemboost.Windows.Power;
 using Miemboost.Windows.Processes;
 
@@ -16,6 +18,7 @@ public partial class MainWindow : Window
 {
     private readonly IDiagnosticsService _diagnosticsService;
     private readonly JsonSystemSnapshotStore _snapshotStore;
+    private readonly JsonOptimizationHistoryStore _historyStore;
     private readonly OptimizationExecutor _executor;
     private readonly OptimizationRestorer _restorer;
     private readonly DefaultPlanFactory _planFactory = new();
@@ -36,6 +39,7 @@ public partial class MainWindow : Window
         ]);
 
         _snapshotStore = new JsonSystemSnapshotStore(GetSnapshotDirectoryPath());
+        _historyStore = new JsonOptimizationHistoryStore(GetHistoryFilePath());
         _executor = new OptimizationExecutor(
             new SafetyPolicy(),
             new WindowsSystemSnapshotFactory(powerPlanManager, processPriorityManager),
@@ -47,6 +51,7 @@ public partial class MainWindow : Window
             new WindowsNetworkDiagnosticsReader());
 
         Loaded += async (_, _) => await RefreshDiagnosticsAsync();
+        Loaded += async (_, _) => await RefreshHistoryAsync();
         ShowBoostPreview();
     }
 
@@ -165,6 +170,7 @@ public partial class MainWindow : Window
         var report = await _executor.ExecuteAsync(plan);
         _lastSnapshotId = report.SnapshotId;
         RestoreButton.IsEnabled = true;
+        await _historyStore.AddAsync(OptimizationHistoryEntryFactory.FromExecution(report, plan.Mode));
 
         PlanList.Items.Clear();
         PlanList.Items.Add($"快照：{report.SnapshotId}");
@@ -172,6 +178,8 @@ public partial class MainWindow : Window
         {
             PlanList.Items.Add($"{ToChineseExecutionStatus(result.Status)}  {result.ActionId} - {result.Message}");
         }
+
+        await RefreshHistoryAsync();
     }
 
     private async void Restore_Click(object sender, RoutedEventArgs e)
@@ -198,11 +206,33 @@ public partial class MainWindow : Window
 
         var report = await _restorer.RestoreAsync(_lastPlan, snapshot);
         RestoreButton.IsEnabled = false;
+        await _historyStore.AddAsync(OptimizationHistoryEntryFactory.FromRestore(report, _lastPlan.Mode));
 
         PlanList.Items.Clear();
         foreach (var result in report.Results)
         {
             PlanList.Items.Add($"{ToChineseExecutionStatus(result.Status)}  {result.ActionId} - {result.Message}");
+        }
+
+        await RefreshHistoryAsync();
+    }
+
+    private async Task RefreshHistoryAsync()
+    {
+        var entries = await _historyStore.ListRecentAsync(limit: 8);
+
+        HistoryList.Items.Clear();
+        if (entries.Count == 0)
+        {
+            HistoryList.Items.Add("暂无记录");
+            return;
+        }
+
+        foreach (var entry in entries)
+        {
+            HistoryList.Items.Add(
+                $"{ToChineseHistoryEvent(entry.EventType)}  {ToChineseExecutionStatus(entry.Status)}  " +
+                $"{entry.CreatedAt.LocalDateTime:HH:mm:ss}  成功 {entry.SucceededCount} / 跳过 {entry.SkippedCount} / 失败 {entry.FailedCount}");
         }
     }
 
@@ -266,12 +296,30 @@ public partial class MainWindow : Window
         };
     }
 
+    private static string ToChineseHistoryEvent(OptimizationHistoryEventType eventType)
+    {
+        return eventType switch
+        {
+            OptimizationHistoryEventType.Boost => "Boost",
+            OptimizationHistoryEventType.Restore => "恢复",
+            _ => "未知"
+        };
+    }
+
     private static string GetSnapshotDirectoryPath()
     {
         return Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Miemboost",
             "Snapshots");
+    }
+
+    private static string GetHistoryFilePath()
+    {
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Miemboost",
+            "history.json");
     }
 
     private sealed record ProcessChoice(int? ProcessId, string DisplayName);
