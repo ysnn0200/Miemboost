@@ -430,6 +430,11 @@ public partial class MainWindow : Window
         _activeGameProfile = match.Profile;
         _activeGameProfileId = match.Profile.Id;
         _selectedGameProcessId = match.ProcessId;
+        if (GameProcessCombo.ItemsSource is IEnumerable<ProcessChoice> processChoices)
+        {
+            GameProcessCombo.SelectedItem = processChoices
+                .FirstOrDefault(choice => choice.ProcessId == _selectedGameProcessId);
+        }
         UpdateActiveProfileText();
         ShowBoostPreview();
     }
