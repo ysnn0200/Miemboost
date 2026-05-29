@@ -27,6 +27,7 @@ Deliverables:
 - Ping, jitter, and packet loss probe. Started.
 - DNS response probe. Started.
 - Diagnostic analyzer for UI-ready findings. Started.
+- Unified diagnostics service for UI and future tray usage. Started.
 
 Rules:
 
