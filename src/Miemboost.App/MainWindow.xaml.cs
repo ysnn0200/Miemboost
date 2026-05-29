@@ -27,6 +27,7 @@ public partial class MainWindow : Window
     private readonly OptimizationRestorer _restorer;
     private readonly DefaultPlanFactory _planFactory = new();
     private readonly BackgroundProcessAnalyzer _backgroundProcessAnalyzer = new();
+    private readonly GameProfileMatcher _gameProfileMatcher = new();
     private OptimizationPlan? _lastPlan;
     private string? _lastSnapshotId;
     private int? _selectedGameProcessId;
@@ -84,6 +85,7 @@ public partial class MainWindow : Window
             _latestProcesses = report.System.Processes;
             RenderProcessChoices(report.System.Processes);
             RenderBackgroundCandidateChoices(report.System.Processes);
+            await AutoMatchRunningGameAsync(report.System.Processes);
         }
         catch (Exception exception)
         {
@@ -369,11 +371,6 @@ public partial class MainWindow : Window
     private async Task RefreshGameLibraryAsync()
     {
         var profiles = await _gameProfileStore.ListAsync();
-        if (_activeGameProfile is null && profiles.Count > 0)
-        {
-            _activeGameProfile = profiles[0];
-            _activeGameProfileId = profiles[0].Id;
-        }
         UpdateActiveProfileText();
 
         GameLibraryList.Items.Clear();
@@ -393,9 +390,7 @@ public partial class MainWindow : Window
 
         GameLibraryList.Items.Clear();
         GameLibraryList.ItemsSource = _gameProfileChoices;
-        GameLibraryList.SelectedItem =
-            _gameProfileChoices.FirstOrDefault(choice => choice.ProfileId == _activeGameProfileId)
-            ?? _gameProfileChoices.FirstOrDefault();
+        GameLibraryList.SelectedItem = _gameProfileChoices.FirstOrDefault(choice => choice.ProfileId == _activeGameProfileId);
     }
 
     private async void GameLibraryList_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -414,6 +409,27 @@ public partial class MainWindow : Window
 
         _activeGameProfile = profile;
         _activeGameProfileId = profile.Id;
+        UpdateActiveProfileText();
+        ShowBoostPreview();
+    }
+
+    private async Task AutoMatchRunningGameAsync(IReadOnlyList<ProcessSnapshot> processes)
+    {
+        if (_activeGameProfile is not null || _selectedGameProcessId is not null)
+        {
+            return;
+        }
+
+        var profiles = await _gameProfileStore.ListAsync();
+        var match = _gameProfileMatcher.FindRunningMatch(profiles, processes);
+        if (match is null)
+        {
+            return;
+        }
+
+        _activeGameProfile = match.Profile;
+        _activeGameProfileId = match.Profile.Id;
+        _selectedGameProcessId = match.ProcessId;
         UpdateActiveProfileText();
         ShowBoostPreview();
     }
