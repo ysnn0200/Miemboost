@@ -67,3 +67,9 @@ It contains:
 ```text
 Miemboost-win-x64.zip
 ```
+
+CI publish stamps the app informational version with the short commit SHA, for example:
+
+```text
+0.1.0-alpha+abc1234
+```
