@@ -1,0 +1,15 @@
+bin/
+obj/
+.vs/
+.vscode/
+*.user
+*.suo
+*.log
+*.tmp
+*.bak
+node_modules/
+dist/
+out/
+coverage/
+artifacts/
+*.nupkg
