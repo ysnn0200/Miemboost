@@ -6,6 +6,7 @@ using Miemboost.Core.Games;
 using Miemboost.Core.History;
 using Miemboost.Core.Models;
 using Miemboost.Core.Planning;
+using Miemboost.Core.Processes;
 using Miemboost.Core.Safety;
 using Miemboost.Windows.Diagnostics;
 using Miemboost.Windows.Execution;
@@ -25,6 +26,7 @@ public partial class MainWindow : Window
     private readonly OptimizationExecutor _executor;
     private readonly OptimizationRestorer _restorer;
     private readonly DefaultPlanFactory _planFactory = new();
+    private readonly BackgroundProcessAnalyzer _backgroundProcessAnalyzer = new();
     private OptimizationPlan? _lastPlan;
     private string? _lastSnapshotId;
     private int? _selectedGameProcessId;
@@ -116,6 +118,11 @@ public partial class MainWindow : Window
             {
                 FindingsList.Items.Add($"{ToChineseStatus(finding.Severity)}  {finding.Title} - {finding.Description}");
             }
+        }
+
+        foreach (var candidate in _backgroundProcessAnalyzer.FindCandidates(report.System.Processes).Take(5))
+        {
+            FindingsList.Items.Add($"后台候选  {candidate.Name}  {ToMb(candidate.WorkingSetBytes):0} MB，可考虑加入游戏配置的允许暂停列表。");
         }
     }
 
