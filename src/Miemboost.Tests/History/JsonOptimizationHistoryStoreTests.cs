@@ -23,6 +23,8 @@ public sealed class JsonOptimizationHistoryStoreTests : IDisposable
 
         var loaded = Assert.Single(entries);
         Assert.Equal(entry.Id, loaded.Id);
+        Assert.NotNull(loaded.Details);
+        Assert.Single(loaded.Details);
     }
 
     [Fact]
@@ -58,6 +60,15 @@ public sealed class JsonOptimizationHistoryStoreTests : IDisposable
             SucceededCount: 1,
             SkippedCount: 0,
             FailedCount: 0,
-            CreatedAt: DateTimeOffset.UnixEpoch);
+            CreatedAt: DateTimeOffset.UnixEpoch,
+            Details:
+            [
+                new OptimizationHistoryActionDetail(
+                    ActionId: "action",
+                    Kind: OptimizationActionKind.Diagnostics,
+                    Status: OptimizationExecutionStatus.Succeeded,
+                    Message: "ok",
+                    CompletedAt: DateTimeOffset.UnixEpoch)
+            ]);
     }
 }

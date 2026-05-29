@@ -35,5 +35,8 @@ public sealed class OptimizationHistoryEntryFactoryTests
         Assert.Equal(1, entry.SkippedCount);
         Assert.Equal(0, entry.FailedCount);
         Assert.Equal(OptimizationExecutionStatus.Succeeded, entry.Status);
+        Assert.NotNull(entry.Details);
+        Assert.Equal(2, entry.Details.Count);
+        Assert.Contains(entry.Details, detail => detail.ActionId == "action" && detail.Message == "skip");
     }
 }

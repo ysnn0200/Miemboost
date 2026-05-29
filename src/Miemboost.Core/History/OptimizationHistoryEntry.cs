@@ -13,4 +13,5 @@ public sealed record OptimizationHistoryEntry(
     int SucceededCount,
     int SkippedCount,
     int FailedCount,
-    DateTimeOffset CreatedAt);
+    DateTimeOffset CreatedAt,
+    IReadOnlyList<OptimizationHistoryActionDetail>? Details = null);

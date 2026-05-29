@@ -50,6 +50,14 @@ public static class OptimizationHistoryEntryFactory
             SucceededCount: succeededCount,
             SkippedCount: skippedCount,
             FailedCount: failedCount,
-            CreatedAt: DateTimeOffset.UtcNow);
+            CreatedAt: DateTimeOffset.UtcNow,
+            Details: results
+                .Select(result => new OptimizationHistoryActionDetail(
+                    ActionId: result.ActionId,
+                    Kind: result.Kind,
+                    Status: result.Status,
+                    Message: result.Message,
+                    CompletedAt: result.CompletedAt))
+                .ToArray());
     }
 }

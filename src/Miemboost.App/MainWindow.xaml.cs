@@ -516,9 +516,14 @@ public partial class MainWindow : Window
 
         foreach (var entry in entries)
         {
+            var notableDetail = entry.Details?
+                .FirstOrDefault(detail => detail.Status != OptimizationExecutionStatus.Succeeded);
+            var detailText = notableDetail is null ? string.Empty : $"  {notableDetail.ActionId}: {notableDetail.Message}";
+
             HistoryList.Items.Add(
                 $"{ToChineseHistoryEvent(entry.EventType)}  {ToChineseExecutionStatus(entry.Status)}  " +
-                $"{entry.CreatedAt.LocalDateTime:HH:mm:ss}  成功 {entry.SucceededCount} / 跳过 {entry.SkippedCount} / 失败 {entry.FailedCount}");
+                $"{entry.CreatedAt.LocalDateTime:HH:mm:ss}  成功 {entry.SucceededCount} / 跳过 {entry.SkippedCount} / 失败 {entry.FailedCount}" +
+                detailText);
         }
     }
 
