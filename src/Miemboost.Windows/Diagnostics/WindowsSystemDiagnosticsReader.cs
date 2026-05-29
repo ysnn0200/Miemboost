@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Net.NetworkInformation;
+using System.Runtime.InteropServices;
 using Miemboost.Core.Diagnostics;
 
 namespace Miemboost.Windows.Diagnostics;
@@ -16,7 +17,8 @@ public sealed class WindowsSystemDiagnosticsReader(
         var cpu = await CaptureCpuAsync(cancellationToken).ConfigureAwait(false);
         var gpu = await CaptureGpuAsync(cancellationToken).ConfigureAwait(false);
         var memory = CaptureMemory(capturedAt);
-        var processes = CaptureProcesses();
+        var networkStats = CaptureProcessNetworkStats();
+        var processes = CaptureProcesses(networkStats);
         var adapters = CaptureNetworkAdapters();
 
         return new SystemDiagnosticsSnapshot(cpu, gpu, memory, processes, adapters, capturedAt);
@@ -114,22 +116,26 @@ public sealed class WindowsSystemDiagnosticsReader(
         return new MemorySnapshot(totalBytes, availableBytes, capturedAt);
     }
 
-    private IReadOnlyList<ProcessSnapshot> CaptureProcesses()
+    private IReadOnlyList<ProcessSnapshot> CaptureProcesses(
+        IReadOnlyDictionary<int, ProcessNetworkStats> networkStats)
     {
         return Process.GetProcesses()
-            .Select(ReadProcess)
+            .Select(process => ReadProcess(process, networkStats))
             .Where(process => process is not null)
             .Select(process => process!)
             .OrderByDescending(process => process.WorkingSetBytes)
             .ToArray();
     }
 
-    private ProcessSnapshot? ReadProcess(Process process)
+    private ProcessSnapshot? ReadProcess(
+        Process process,
+        IReadOnlyDictionary<int, ProcessNetworkStats> networkStats)
     {
         try
         {
             var name = process.ProcessName;
             var path = TryReadMainModulePath(process);
+            networkStats.TryGetValue(process.Id, out var stats);
 
             return new ProcessSnapshot(
                 ProcessId: process.Id,
@@ -137,7 +143,9 @@ public sealed class WindowsSystemDiagnosticsReader(
                 MainModulePath: path,
                 WorkingSetBytes: process.WorkingSet64,
                 TotalProcessorTime: process.TotalProcessorTime,
-                IsProtectedCandidate: _protectedProcessClassifier.IsProtectedCandidate(name, path));
+                IsProtectedCandidate: _protectedProcessClassifier.IsProtectedCandidate(name, path),
+                TcpConnectionCount: stats.TotalConnections,
+                EstablishedTcpConnectionCount: stats.EstablishedConnections);
         }
         catch
         {
@@ -146,6 +154,25 @@ public sealed class WindowsSystemDiagnosticsReader(
         finally
         {
             process.Dispose();
+        }
+    }
+
+    private static IReadOnlyDictionary<int, ProcessNetworkStats> CaptureProcessNetworkStats()
+    {
+        try
+        {
+            var rows = TcpConnectionTableReader.ReadIpv4();
+            return rows
+                .GroupBy(row => row.ProcessId)
+                .ToDictionary(
+                    group => group.Key,
+                    group => new ProcessNetworkStats(
+                        TotalConnections: group.Count(),
+                        EstablishedConnections: group.Count(row => row.State == TcpState.Established)));
+        }
+        catch
+        {
+            return new Dictionary<int, ProcessNetworkStats>();
         }
     }
 
@@ -166,6 +193,94 @@ public sealed class WindowsSystemDiagnosticsReader(
         return NetworkInterface.GetAllNetworkInterfaces()
             .Select(ReadAdapter)
             .ToArray();
+    }
+
+    private readonly record struct ProcessNetworkStats(
+        int TotalConnections,
+        int EstablishedConnections);
+
+    private readonly record struct TcpConnectionRow(
+        int ProcessId,
+        TcpState State);
+
+    private static class TcpConnectionTableReader
+    {
+        private const int AfInet = 2;
+        private const int TcpTableOwnerPidAll = 5;
+        private const int ErrorInsufficientBuffer = 122;
+
+        public static IReadOnlyList<TcpConnectionRow> ReadIpv4()
+        {
+            var bufferSize = 0;
+            var result = GetExtendedTcpTable(
+                IntPtr.Zero,
+                ref bufferSize,
+                sort: true,
+                ipVersion: AfInet,
+                tableClass: TcpTableOwnerPidAll,
+                reserved: 0);
+
+            if (result != ErrorInsufficientBuffer || bufferSize <= 0)
+            {
+                return [];
+            }
+
+            var buffer = Marshal.AllocHGlobal(bufferSize);
+            try
+            {
+                result = GetExtendedTcpTable(
+                    buffer,
+                    ref bufferSize,
+                    sort: true,
+                    ipVersion: AfInet,
+                    tableClass: TcpTableOwnerPidAll,
+                    reserved: 0);
+
+                if (result != 0)
+                {
+                    return [];
+                }
+
+                var rowCount = Marshal.ReadInt32(buffer);
+                var rowPointer = IntPtr.Add(buffer, sizeof(int));
+                var rowSize = Marshal.SizeOf<MibTcpRowOwnerPid>();
+                var rows = new List<TcpConnectionRow>(rowCount);
+
+                for (var index = 0; index < rowCount; index++)
+                {
+                    var row = Marshal.PtrToStructure<MibTcpRowOwnerPid>(IntPtr.Add(rowPointer, index * rowSize));
+                    rows.Add(new TcpConnectionRow(
+                        ProcessId: (int)row.OwningPid,
+                        State: row.State));
+                }
+
+                return rows;
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(buffer);
+            }
+        }
+
+        [DllImport("iphlpapi.dll", SetLastError = true)]
+        private static extern int GetExtendedTcpTable(
+            IntPtr tcpTable,
+            ref int tcpTableLength,
+            bool sort,
+            int ipVersion,
+            int tableClass,
+            int reserved);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private readonly struct MibTcpRowOwnerPid
+        {
+            public readonly TcpState State;
+            public readonly uint LocalAddr;
+            public readonly uint LocalPort;
+            public readonly uint RemoteAddr;
+            public readonly uint RemotePort;
+            public readonly uint OwningPid;
+        }
     }
 
     private static NetworkAdapterSnapshot ReadAdapter(NetworkInterface adapter)

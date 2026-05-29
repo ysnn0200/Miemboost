@@ -6,4 +6,6 @@ public sealed record ProcessSnapshot(
     string? MainModulePath,
     long WorkingSetBytes,
     TimeSpan TotalProcessorTime,
-    bool IsProtectedCandidate);
+    bool IsProtectedCandidate,
+    int TcpConnectionCount = 0,
+    int EstablishedTcpConnectionCount = 0);

@@ -53,6 +53,24 @@ public sealed class DiagnosticsAnalyzerTests
         Assert.Contains(summary.Findings, finding => finding.Id == "network.packet-loss");
     }
 
+    [Fact]
+    public void Analyze_FlagsHighBackgroundNetworkActivity()
+    {
+        var process = new ProcessSnapshot(
+            ProcessId: 20,
+            Name: "GameLauncher",
+            MainModulePath: null,
+            WorkingSetBytes: 100,
+            TotalProcessorTime: TimeSpan.Zero,
+            IsProtectedCandidate: false,
+            TcpConnectionCount: 15,
+            EstablishedTcpConnectionCount: 13);
+
+        var summary = new DiagnosticsAnalyzer().Analyze(CreateSnapshot(processes: [process]));
+
+        Assert.Contains(summary.Findings, finding => finding.Id == "process.high-network-activity");
+    }
+
     private static SystemDiagnosticsSnapshot CreateSnapshot(
         double cpuUsagePercent = 10,
         double memoryUsedPercent = 40,

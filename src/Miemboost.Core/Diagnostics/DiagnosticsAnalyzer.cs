@@ -6,6 +6,8 @@ public sealed class DiagnosticsAnalyzer
     private const double HighMemoryPercent = 85;
     private const long HighProcessMemoryBytes = 700L * 1024 * 1024;
     private const long NoticeProcessMemoryBytes = 350L * 1024 * 1024;
+    private const int HighEstablishedTcpConnections = 12;
+    private const int NoticeEstablishedTcpConnections = 6;
 
     public DiagnosticsSummary Analyze(
         SystemDiagnosticsSnapshot system,
@@ -92,6 +94,30 @@ public sealed class DiagnosticsAnalyzer
                     Id: "process.notice-memory",
                     Title: "Noticeable memory background process",
                     Description: $"{process.Name} is using noticeable memory. Review it before adding it to any automatic pause list.",
+                    Severity: DiagnosticSeverity.Notice,
+                    RelatedProcessName: process.Name,
+                    RelatedProcessId: process.ProcessId));
+            }
+
+            if (process.EstablishedTcpConnectionCount >= HighEstablishedTcpConnections)
+            {
+                findings.Add(new DiagnosticFinding(
+                    Id: "process.high-network-activity",
+                    Title: "High background network activity",
+                    Description: $"{process.Name} has {process.EstablishedTcpConnectionCount} established TCP connections. Check for downloads, sync, updates, or launchers before playing.",
+                    Severity: DiagnosticSeverity.Warning,
+                    RelatedProcessName: process.Name,
+                    RelatedProcessId: process.ProcessId));
+
+                continue;
+            }
+
+            if (process.EstablishedTcpConnectionCount >= NoticeEstablishedTcpConnections)
+            {
+                findings.Add(new DiagnosticFinding(
+                    Id: "process.notice-network-activity",
+                    Title: "Noticeable background network activity",
+                    Description: $"{process.Name} has {process.EstablishedTcpConnectionCount} established TCP connections. It may affect latency if it is syncing or downloading.",
                     Severity: DiagnosticSeverity.Notice,
                     RelatedProcessName: process.Name,
                     RelatedProcessId: process.ProcessId));
