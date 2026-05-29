@@ -63,6 +63,7 @@ public sealed class DiagnosticsAnalyzerTests
 
         return new SystemDiagnosticsSnapshot(
             Cpu: new CpuSnapshot(cpuUsagePercent, 8, DateTimeOffset.UnixEpoch),
+            Gpu: new GpuSnapshot(0, false, "test", DateTimeOffset.UnixEpoch),
             Memory: new MemorySnapshot(totalMemory, availableMemory, DateTimeOffset.UnixEpoch),
             Processes: processes ?? [],
             NetworkAdapters:

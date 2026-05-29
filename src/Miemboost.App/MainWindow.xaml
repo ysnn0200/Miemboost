@@ -291,8 +291,9 @@
                                 </StackPanel>
                             </DockPanel>
                             <StackPanel Grid.Row="1" VerticalAlignment="Center">
-                                <TextBlock Text="--%" Foreground="#FFFFFF" FontSize="34" FontWeight="SemiBold" />
-                                <TextBlock Text="GPU 实时占用将在下一阶段接入"
+                                <TextBlock x:Name="GpuText" Text="--%" Foreground="#FFFFFF" FontSize="34" FontWeight="SemiBold" />
+                                <TextBlock x:Name="GpuDetailText"
+                                           Text="正在检测"
                                            Foreground="#A9B7CC"
                                            TextWrapping="Wrap"
                                            Margin="0,8,0,0" />

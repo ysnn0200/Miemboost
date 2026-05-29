@@ -14,11 +14,12 @@ public sealed class WindowsSystemDiagnosticsReader(
     {
         var capturedAt = DateTimeOffset.UtcNow;
         var cpu = await CaptureCpuAsync(cancellationToken).ConfigureAwait(false);
+        var gpu = await CaptureGpuAsync(cancellationToken).ConfigureAwait(false);
         var memory = CaptureMemory(capturedAt);
         var processes = CaptureProcesses();
         var adapters = CaptureNetworkAdapters();
 
-        return new SystemDiagnosticsSnapshot(cpu, memory, processes, adapters, capturedAt);
+        return new SystemDiagnosticsSnapshot(cpu, gpu, memory, processes, adapters, capturedAt);
     }
 
     private static async Task<CpuSnapshot> CaptureCpuAsync(CancellationToken cancellationToken)
@@ -38,6 +39,57 @@ public sealed class WindowsSystemDiagnosticsReader(
             : Math.Clamp((second - first) / (elapsedMs * processorCount) * 100d, 0, 100);
 
         return new CpuSnapshot(usage, processorCount, DateTimeOffset.UtcNow);
+    }
+
+    private static async Task<GpuSnapshot> CaptureGpuAsync(CancellationToken cancellationToken)
+    {
+        const string categoryName = "GPU Engine";
+        const string counterName = "% Utilization";
+
+        PerformanceCounter[] counters = [];
+        try
+        {
+            if (!PerformanceCounterCategory.Exists(categoryName))
+            {
+                return new GpuSnapshot(0, false, "GPU Engine counter unavailable", DateTimeOffset.UtcNow);
+            }
+
+            var category = new PerformanceCounterCategory(categoryName);
+            var instances = category.GetInstanceNames()
+                .Where(instance => instance.Contains("engtype_3D", StringComparison.OrdinalIgnoreCase))
+                .OrderBy(instance => instance, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            if (instances.Length == 0)
+            {
+                return new GpuSnapshot(0, false, "No 3D GPU engine counters", DateTimeOffset.UtcNow);
+            }
+
+            counters = instances
+                .Select(instance => new PerformanceCounter(categoryName, counterName, instance, readOnly: true))
+                .ToArray();
+
+            foreach (var counter in counters)
+            {
+                _ = counter.NextValue();
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(150), cancellationToken).ConfigureAwait(false);
+
+            var usage = counters.Sum(counter => counter.NextValue());
+            return new GpuSnapshot(Math.Clamp(usage, 0, 100), true, "Windows GPU Engine", DateTimeOffset.UtcNow);
+        }
+        catch
+        {
+            return new GpuSnapshot(0, false, "GPU counter read failed", DateTimeOffset.UtcNow);
+        }
+        finally
+        {
+            foreach (var counter in counters)
+            {
+                counter.Dispose();
+            }
+        }
     }
 
     private static double ReadTotalProcessorMilliseconds(Process process)

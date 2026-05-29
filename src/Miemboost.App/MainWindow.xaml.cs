@@ -184,6 +184,11 @@ public partial class MainWindow : Window
         CpuDetailText.Text = $"{report.System.Cpu.LogicalProcessorCount} 逻辑处理器";
         CpuBar.Value = report.System.Cpu.UsagePercent;
 
+        GpuText.Text = report.System.Gpu.IsAvailable ? $"{report.System.Gpu.UsagePercent:0}%" : "--%";
+        GpuDetailText.Text = report.System.Gpu.IsAvailable
+            ? report.System.Gpu.Source
+            : "当前系统未提供 GPU 计数器";
+
         MemoryText.Text = $"{report.System.Memory.UsedPercent:0}%";
         MemoryDetailText.Text = $"{ToGb(report.System.Memory.UsedBytes):0.0} GB / {ToGb(report.System.Memory.TotalBytes):0.0} GB";
         MemoryBar.Value = report.System.Memory.UsedPercent;

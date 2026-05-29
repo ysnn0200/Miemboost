@@ -41,6 +41,7 @@ public sealed class DiagnosticsServiceTests
     {
         return new SystemDiagnosticsSnapshot(
             Cpu: new CpuSnapshot(12, 8, DateTimeOffset.UnixEpoch),
+            Gpu: new GpuSnapshot(0, false, "test", DateTimeOffset.UnixEpoch),
             Memory: new MemorySnapshot(100, 60, DateTimeOffset.UnixEpoch),
             Processes: [],
             NetworkAdapters:
