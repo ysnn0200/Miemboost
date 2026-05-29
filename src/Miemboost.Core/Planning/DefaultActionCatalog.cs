@@ -1,3 +1,4 @@
+using Miemboost.Core.Diagnostics;
 using Miemboost.Core.Models;
 using Miemboost.Core.Processes;
 
@@ -52,6 +53,19 @@ public static class DefaultActionCatalog
             Parameters = new Dictionary<string, string>
             {
                 [BackgroundAppPauseActionParameters.ProcessIds] = string.Join(";", processIds)
+            }
+        };
+    }
+
+    public static OptimizationActionDescriptor CreatePauseApprovedBackgroundAppsAction(
+        IReadOnlyList<ProcessSnapshot> processes)
+    {
+        return PauseApprovedBackgroundApps with
+        {
+            Parameters = new Dictionary<string, string>
+            {
+                [BackgroundAppPauseActionParameters.ProcessIds] = string.Join(";", processes.Select(process => process.ProcessId)),
+                [BackgroundAppPauseActionParameters.ProcessNames] = string.Join(";", processes.Select(process => process.Name))
             }
         };
     }

@@ -82,6 +82,13 @@ public sealed class ProcessPriorityActionHandlerTests
 
         public ManagedProcessPriority? LastPriority { get; private set; }
 
+        public Task<string?> GetProcessNameAsync(
+            int processId,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<string?>("Game");
+        }
+
         public Task<ManagedProcessPriority?> GetPriorityAsync(
             int processId,
             CancellationToken cancellationToken = default)

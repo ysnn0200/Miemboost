@@ -24,16 +24,16 @@ public sealed class DefaultPlanFactory
             builder.Add(DefaultActionCatalog.CreateGamePriorityHighAction(gameProcessId.Value));
         }
 
-        var allowedBackgroundProcessIds = FindAllowedBackgroundProcessIds(gameProfile, processes);
-        if (allowedBackgroundProcessIds.Count > 0)
+        var allowedBackgroundProcesses = FindAllowedBackgroundProcesses(gameProfile, processes);
+        if (allowedBackgroundProcesses.Count > 0)
         {
-            builder.Add(DefaultActionCatalog.CreatePauseApprovedBackgroundAppsAction(allowedBackgroundProcessIds));
+            builder.Add(DefaultActionCatalog.CreatePauseApprovedBackgroundAppsAction(allowedBackgroundProcesses));
         }
 
         return builder.Build(mode, gameProfileId);
     }
 
-    private static IReadOnlyList<int> FindAllowedBackgroundProcessIds(
+    private static IReadOnlyList<ProcessSnapshot> FindAllowedBackgroundProcesses(
         GameProfile? gameProfile,
         IReadOnlyList<ProcessSnapshot>? processes)
     {
@@ -49,8 +49,8 @@ public sealed class DefaultPlanFactory
         return processes
             .Where(process => !process.IsProtectedCandidate)
             .Where(process => allowedNames.Contains(process.Name))
-            .Select(process => process.ProcessId)
-            .Distinct()
+            .GroupBy(process => process.ProcessId)
+            .Select(group => group.First())
             .ToArray();
     }
 }

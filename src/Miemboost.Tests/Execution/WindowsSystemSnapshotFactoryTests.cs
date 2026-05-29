@@ -98,6 +98,13 @@ public sealed class WindowsSystemSnapshotFactoryTests
 
     private sealed class StubProcessPriorityManager : IProcessPriorityManager
     {
+        public Task<string?> GetProcessNameAsync(
+            int processId,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<string?>("Process");
+        }
+
         public Task<ManagedProcessPriority?> GetPriorityAsync(
             int processId,
             CancellationToken cancellationToken = default)

@@ -5,6 +5,23 @@ namespace Miemboost.Windows.Processes;
 
 public sealed class WindowsProcessPriorityManager : IProcessPriorityManager
 {
+    public Task<string?> GetProcessNameAsync(
+        int processId,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        try
+        {
+            using var process = Process.GetProcessById(processId);
+            return Task.FromResult<string?>(process.ProcessName);
+        }
+        catch
+        {
+            return Task.FromResult<string?>(null);
+        }
+    }
+
     public Task<ManagedProcessPriority?> GetPriorityAsync(
         int processId,
         CancellationToken cancellationToken = default)

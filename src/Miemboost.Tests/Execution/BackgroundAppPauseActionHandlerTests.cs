@@ -38,6 +38,30 @@ public sealed class BackgroundAppPauseActionHandlerTests
         Assert.Equal(ManagedProcessPriority.Normal, call.Priority);
     }
 
+    [Fact]
+    public async Task ExecuteAsync_SkipsWhenProcessNameNoLongerMatches()
+    {
+        var manager = new RecordingProcessPriorityManager();
+        manager.ProcessNames[10] = "Browser";
+        var handler = new BackgroundAppPauseActionHandler(manager);
+        var action = DefaultActionCatalog.CreatePauseApprovedBackgroundAppsAction(
+        [
+            new Miemboost.Core.Diagnostics.ProcessSnapshot(
+                ProcessId: 10,
+                Name: "Discord",
+                MainModulePath: null,
+                WorkingSetBytes: 100,
+                TotalProcessorTime: TimeSpan.Zero,
+                IsProtectedCandidate: false)
+        ]);
+
+        var result = await handler.ExecuteAsync(action, CreateContext(action));
+
+        Assert.Equal(OptimizationExecutionStatus.Skipped, result.Status);
+        Assert.Empty(manager.SetCalls);
+    }
+
+
     private static OptimizationExecutionContext CreateContext(OptimizationActionDescriptor action)
     {
         var plan = new OptimizationPlan(
@@ -65,6 +89,19 @@ public sealed class BackgroundAppPauseActionHandlerTests
     private sealed class RecordingProcessPriorityManager : IProcessPriorityManager
     {
         public List<(int ProcessId, ManagedProcessPriority Priority)> SetCalls { get; } = [];
+
+        public Dictionary<int, string> ProcessNames { get; } = new()
+        {
+            [10] = "Discord",
+            [11] = "Steam"
+        };
+
+        public Task<string?> GetProcessNameAsync(
+            int processId,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(ProcessNames.GetValueOrDefault(processId));
+        }
 
         public Task<ManagedProcessPriority?> GetPriorityAsync(
             int processId,

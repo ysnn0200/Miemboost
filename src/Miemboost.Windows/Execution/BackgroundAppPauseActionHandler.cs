@@ -14,21 +14,26 @@ public sealed class BackgroundAppPauseActionHandler(IProcessPriorityManager proc
         OptimizationExecutionContext context,
         CancellationToken cancellationToken = default)
     {
-        var processIds = ReadProcessIds(action);
-        if (processIds.Count == 0)
+        var targets = ReadTargets(action);
+        if (targets.Count == 0)
         {
             return OptimizationActionResult.Skipped(action, "No approved background processes were provided.");
         }
 
         var changed = 0;
-        foreach (var processId in processIds)
+        foreach (var target in targets)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
             try
             {
+                if (!await ProcessNameStillMatchesAsync(target, cancellationToken).ConfigureAwait(false))
+                {
+                    continue;
+                }
+
                 await processPriorityManager
-                    .SetPriorityAsync(processId, ManagedProcessPriority.BelowNormal, cancellationToken)
+                    .SetPriorityAsync(target.ProcessId, ManagedProcessPriority.BelowNormal, cancellationToken)
                     .ConfigureAwait(false);
                 changed++;
             }
@@ -48,17 +53,17 @@ public sealed class BackgroundAppPauseActionHandler(IProcessPriorityManager proc
         OptimizationExecutionContext context,
         CancellationToken cancellationToken = default)
     {
-        var processIds = ReadProcessIds(action);
-        if (processIds.Count == 0)
+        var targets = ReadTargets(action);
+        if (targets.Count == 0)
         {
             return OptimizationActionResult.Skipped(action, "No approved background processes were provided.");
         }
 
         var restored = 0;
-        foreach (var processId in processIds)
+        foreach (var target in targets)
         {
             var snapshot = context.Snapshot.ProcessPriorities
-                .FirstOrDefault(item => item.ProcessId == processId);
+                .FirstOrDefault(item => item.ProcessId == target.ProcessId);
 
             if (snapshot is null
                 || !Enum.TryParse<ManagedProcessPriority>(
@@ -71,8 +76,13 @@ public sealed class BackgroundAppPauseActionHandler(IProcessPriorityManager proc
 
             try
             {
+                if (!await ProcessNameStillMatchesAsync(target, cancellationToken).ConfigureAwait(false))
+                {
+                    continue;
+                }
+
                 await processPriorityManager
-                    .SetPriorityAsync(processId, previousPriority, cancellationToken)
+                    .SetPriorityAsync(target.ProcessId, previousPriority, cancellationToken)
                     .ConfigureAwait(false);
                 restored++;
             }
@@ -87,18 +97,49 @@ public sealed class BackgroundAppPauseActionHandler(IProcessPriorityManager proc
             : OptimizationActionResult.Succeeded(action, $"Restored priority for {restored} approved background process(es).");
     }
 
-    private static IReadOnlyList<int> ReadProcessIds(OptimizationActionDescriptor action)
+    private async Task<bool> ProcessNameStillMatchesAsync(
+        BackgroundProcessTarget target,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(target.ExpectedName))
+        {
+            return true;
+        }
+
+        var currentName = await processPriorityManager
+            .GetProcessNameAsync(target.ProcessId, cancellationToken)
+            .ConfigureAwait(false);
+
+        return string.Equals(currentName, target.ExpectedName, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static IReadOnlyList<BackgroundProcessTarget> ReadTargets(OptimizationActionDescriptor action)
     {
         if (!action.Parameters.TryGetValue(BackgroundAppPauseActionParameters.ProcessIds, out var processIdsText))
         {
             return [];
         }
 
-        return processIdsText
+        var processIds = processIdsText
             .Split([';', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(text => int.TryParse(text, out var processId) ? processId : 0)
             .Where(processId => processId > 0)
             .Distinct()
             .ToArray();
+
+        action.Parameters.TryGetValue(BackgroundAppPauseActionParameters.ProcessNames, out var processNamesText);
+        var processNames = string.IsNullOrWhiteSpace(processNamesText)
+            ? []
+            : processNamesText.Split([';', ','], StringSplitOptions.TrimEntries);
+
+        return processIds
+            .Select((processId, index) => new BackgroundProcessTarget(
+                processId,
+                index < processNames.Length ? processNames[index] : null))
+            .ToArray();
     }
+
+    private sealed record BackgroundProcessTarget(
+        int ProcessId,
+        string? ExpectedName);
 }
