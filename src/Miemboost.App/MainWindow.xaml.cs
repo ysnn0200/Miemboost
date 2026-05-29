@@ -58,12 +58,17 @@ public partial class MainWindow : Window
         var powerPlanManager = new WindowsPowerPlanManager();
         var processPriorityManager = new WindowsProcessPriorityManager();
         var standbyMemoryManager = new WindowsStandbyMemoryManager();
+        _diagnosticsService = new DiagnosticsService(
+            new WindowsSystemDiagnosticsReader(),
+            new WindowsNetworkDiagnosticsReader());
+
         var handlerRegistry = new OptimizationActionHandlerRegistry(
         [
             new PowerPlanSwitchActionHandler(powerPlanManager),
             new ProcessPriorityActionHandler(processPriorityManager),
             new BackgroundAppPauseActionHandler(processPriorityManager),
-            new StandbyMemoryReleaseActionHandler(standbyMemoryManager)
+            new StandbyMemoryReleaseActionHandler(standbyMemoryManager),
+            new NetworkDiagnosticsActionHandler(_diagnosticsService)
         ]);
 
         _snapshotStore = new JsonSystemSnapshotStore(GetSnapshotDirectoryPath());
@@ -75,9 +80,6 @@ public partial class MainWindow : Window
             _snapshotStore,
             handlerRegistry);
         _restorer = new OptimizationRestorer(handlerRegistry);
-        _diagnosticsService = new DiagnosticsService(
-            new WindowsSystemDiagnosticsReader(),
-            new WindowsNetworkDiagnosticsReader());
 
         Loaded += async (_, _) => await RefreshDiagnosticsAsync();
         Loaded += async (_, _) => await RefreshHistoryAsync();
