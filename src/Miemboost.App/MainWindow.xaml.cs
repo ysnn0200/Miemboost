@@ -17,6 +17,7 @@ using Miemboost.Windows.Diagnostics;
 using Miemboost.Windows.Execution;
 using Miemboost.Windows.Games;
 using Miemboost.Windows.History;
+using Miemboost.Windows.Memory;
 using Miemboost.Windows.Power;
 using Miemboost.Windows.Processes;
 
@@ -56,11 +57,13 @@ public partial class MainWindow : Window
 
         var powerPlanManager = new WindowsPowerPlanManager();
         var processPriorityManager = new WindowsProcessPriorityManager();
+        var standbyMemoryManager = new WindowsStandbyMemoryManager();
         var handlerRegistry = new OptimizationActionHandlerRegistry(
         [
             new PowerPlanSwitchActionHandler(powerPlanManager),
             new ProcessPriorityActionHandler(processPriorityManager),
-            new BackgroundAppPauseActionHandler(processPriorityManager)
+            new BackgroundAppPauseActionHandler(processPriorityManager),
+            new StandbyMemoryReleaseActionHandler(standbyMemoryManager)
         ]);
 
         _snapshotStore = new JsonSystemSnapshotStore(GetSnapshotDirectoryPath());
