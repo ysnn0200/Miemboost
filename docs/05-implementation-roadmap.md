@@ -58,12 +58,14 @@ Rules:
 
 ## Phase 4: Desktop Shell
 
+Status: in progress.
+
 Deliverables:
 
-- macOS-inspired shell.
-- Sidebar navigation.
-- Overview dashboard.
-- Boost preview page.
+- macOS-inspired shell. Started.
+- Sidebar navigation. Started.
+- Overview dashboard. Started.
+- Boost preview page. Started.
 - Restore surface.
 - Game library profile editor.
 - Settings.

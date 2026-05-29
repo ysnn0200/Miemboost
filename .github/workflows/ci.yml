@@ -22,10 +22,10 @@ jobs:
           dotnet-version: 8.0.x
 
       - name: Restore
-        run: dotnet restore src/Miemboost.Tests/Miemboost.Tests.csproj
+        run: dotnet restore Miemboost.sln
 
       - name: Build
-        run: dotnet build src/Miemboost.Tests/Miemboost.Tests.csproj --configuration Release --no-restore
+        run: dotnet build Miemboost.sln --configuration Release --no-restore
 
       - name: Test
         run: dotnet test src/Miemboost.Tests/Miemboost.Tests.csproj --configuration Release --no-build --verbosity normal

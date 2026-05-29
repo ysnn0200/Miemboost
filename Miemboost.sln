@@ -1,0 +1,48 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C97EEBB1-5067-457A-BE08-C49AD8F3A0E6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Miemboost.Core", "src\Miemboost.Core\Miemboost.Core.csproj", "{B3A43CF4-DA2B-49AD-9B32-2A6D31043A53}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Miemboost.Windows", "src\Miemboost.Windows\Miemboost.Windows.csproj", "{07E3CCA1-A5BE-44DA-854A-65AF5259279E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Miemboost.Tests", "src\Miemboost.Tests\Miemboost.Tests.csproj", "{0569976C-2D54-4121-B572-C32ABE1AD81B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Miemboost.App", "src\Miemboost.App\Miemboost.App.csproj", "{8591020C-4688-4C88-A5DE-73856484A1A9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B3A43CF4-DA2B-49AD-9B32-2A6D31043A53}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B3A43CF4-DA2B-49AD-9B32-2A6D31043A53}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B3A43CF4-DA2B-49AD-9B32-2A6D31043A53}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B3A43CF4-DA2B-49AD-9B32-2A6D31043A53}.Release|Any CPU.Build.0 = Release|Any CPU
+		{07E3CCA1-A5BE-44DA-854A-65AF5259279E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{07E3CCA1-A5BE-44DA-854A-65AF5259279E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{07E3CCA1-A5BE-44DA-854A-65AF5259279E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{07E3CCA1-A5BE-44DA-854A-65AF5259279E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0569976C-2D54-4121-B572-C32ABE1AD81B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0569976C-2D54-4121-B572-C32ABE1AD81B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0569976C-2D54-4121-B572-C32ABE1AD81B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0569976C-2D54-4121-B572-C32ABE1AD81B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8591020C-4688-4C88-A5DE-73856484A1A9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8591020C-4688-4C88-A5DE-73856484A1A9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8591020C-4688-4C88-A5DE-73856484A1A9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8591020C-4688-4C88-A5DE-73856484A1A9}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{B3A43CF4-DA2B-49AD-9B32-2A6D31043A53} = {C97EEBB1-5067-457A-BE08-C49AD8F3A0E6}
+		{07E3CCA1-A5BE-44DA-854A-65AF5259279E} = {C97EEBB1-5067-457A-BE08-C49AD8F3A0E6}
+		{0569976C-2D54-4121-B572-C32ABE1AD81B} = {C97EEBB1-5067-457A-BE08-C49AD8F3A0E6}
+		{8591020C-4688-4C88-A5DE-73856484A1A9} = {C97EEBB1-5067-457A-BE08-C49AD8F3A0E6}
+	EndGlobalSection
+EndGlobal
