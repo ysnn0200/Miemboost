@@ -85,8 +85,9 @@ public partial class MainWindow : Window
     {
         var menu = new Forms.ContextMenuStrip();
         menu.Items.Add("Show Miemboost", null, (_, _) => ShowFromTray());
-        menu.Items.Add("Exit", null, (_, _) =>
+        menu.Items.Add("Exit", null, async (_, _) =>
         {
+            await RestoreBeforeExitAsync();
             _isExitRequested = true;
             Close();
         });
@@ -118,6 +119,14 @@ public partial class MainWindow : Window
 
         e.Cancel = true;
         HideToTray();
+    }
+
+    private async Task RestoreBeforeExitAsync()
+    {
+        if (RestoreButton.IsEnabled)
+        {
+            await RestoreAsync();
+        }
     }
 
     private void MainWindow_Closed(object? sender, EventArgs e)
