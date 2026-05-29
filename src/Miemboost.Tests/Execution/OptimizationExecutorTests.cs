@@ -52,6 +52,21 @@ public sealed class OptimizationExecutorTests
         Assert.True(recordingHandler.WasExecuted);
     }
 
+    [Fact]
+    public async Task ExecuteAsync_SkipsElevatedActionWhenNotAdministrator()
+    {
+        var action = DefaultActionCatalog.ReleaseStandbyMemory;
+        var handler = new RecordingHandler(action.Id);
+        var plan = CreatePlan([action]);
+        var executor = CreateExecutor(new StubPrivilegeChecker(false), handler);
+
+        var report = await executor.ExecuteAsync(plan);
+
+        var result = Assert.Single(report.Results);
+        Assert.Equal(OptimizationExecutionStatus.Skipped, result.Status);
+        Assert.False(handler.WasExecuted);
+    }
+
     private static OptimizationExecutor CreateExecutor(params IOptimizationActionHandler[] handlers)
     {
         return CreateExecutor(new RecordingSnapshotStore(), handlers);
@@ -73,6 +88,18 @@ public sealed class OptimizationExecutorTests
         RecordingSnapshotStore snapshotStore)
     {
         return CreateExecutor(snapshotStore, handler);
+    }
+
+    private static OptimizationExecutor CreateExecutor(
+        StubPrivilegeChecker privilegeChecker,
+        params IOptimizationActionHandler[] handlers)
+    {
+        return new OptimizationExecutor(
+            new SafetyPolicy(),
+            new StubSnapshotFactory(),
+            new RecordingSnapshotStore(),
+            new OptimizationActionHandlerRegistry(handlers),
+            privilegeChecker);
     }
 
     private static OptimizationPlan CreatePlan(IReadOnlyList<OptimizationActionDescriptor> actions)
@@ -169,6 +196,14 @@ public sealed class OptimizationExecutorTests
             CancellationToken cancellationToken = default)
         {
             return Task.FromResult(OptimizationActionResult.Succeeded(action, "Restored."));
+        }
+    }
+
+    private sealed class StubPrivilegeChecker(bool isAdministrator) : Miemboost.Core.Security.IPrivilegeChecker
+    {
+        public bool IsAdministrator()
+        {
+            return isAdministrator;
         }
     }
 }

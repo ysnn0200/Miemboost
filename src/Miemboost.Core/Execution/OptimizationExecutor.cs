@@ -1,5 +1,6 @@
 using Miemboost.Core.Models;
 using Miemboost.Core.Safety;
+using Miemboost.Core.Security;
 
 namespace Miemboost.Core.Execution;
 
@@ -7,7 +8,8 @@ public sealed class OptimizationExecutor(
     SafetyPolicy safetyPolicy,
     ISystemSnapshotFactory snapshotFactory,
     ISystemSnapshotStore snapshotStore,
-    IOptimizationActionHandlerRegistry handlerRegistry)
+    IOptimizationActionHandlerRegistry handlerRegistry,
+    IPrivilegeChecker? privilegeChecker = null)
 {
     public async Task<OptimizationExecutionReport> ExecuteAsync(
         OptimizationPlan plan,
@@ -36,6 +38,14 @@ public sealed class OptimizationExecutor(
                 results.Add(OptimizationActionResult.Skipped(
                     action,
                     decision.Reason ?? "Action blocked by safety policy."));
+                continue;
+            }
+
+            if (action.RequiresElevation && privilegeChecker?.IsAdministrator() == false)
+            {
+                results.Add(OptimizationActionResult.Skipped(
+                    action,
+                    "Administrator permission is required for this action."));
                 continue;
             }
 

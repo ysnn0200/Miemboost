@@ -20,6 +20,7 @@ using Miemboost.Windows.History;
 using Miemboost.Windows.Memory;
 using Miemboost.Windows.Power;
 using Miemboost.Windows.Processes;
+using Miemboost.Windows.Security;
 
 namespace Miemboost.App;
 
@@ -80,7 +81,8 @@ public partial class MainWindow : Window
             new SafetyPolicy(),
             new WindowsSystemSnapshotFactory(powerPlanManager, processPriorityManager),
             _snapshotStore,
-            handlerRegistry);
+            handlerRegistry,
+            new WindowsPrivilegeChecker());
         _restorer = new OptimizationRestorer(handlerRegistry);
 
         Loaded += async (_, _) => await RefreshDiagnosticsAsync();
