@@ -31,6 +31,8 @@ public partial class MainWindow : Window
     private string? _lastSnapshotId;
     private int? _selectedGameProcessId;
     private IReadOnlyList<ProcessSnapshot> _latestProcesses = [];
+    private IReadOnlyList<BackgroundCandidateChoice> _backgroundCandidateChoices = [];
+    private string? _activeGameProfileId;
 
     public MainWindow()
     {
@@ -78,6 +80,7 @@ public partial class MainWindow : Window
             RenderDiagnostics(report);
             _latestProcesses = report.System.Processes;
             RenderProcessChoices(report.System.Processes);
+            RenderBackgroundCandidateChoices(report.System.Processes);
         }
         catch (Exception exception)
         {
@@ -164,6 +167,19 @@ public partial class MainWindow : Window
         GameProcessCombo.SelectedItem = options.FirstOrDefault(option => option.ProcessId == previousSelection) ?? options[0];
     }
 
+    private void RenderBackgroundCandidateChoices(IReadOnlyList<ProcessSnapshot> processes)
+    {
+        _backgroundCandidateChoices = _backgroundProcessAnalyzer.FindCandidates(processes)
+            .Take(12)
+            .Select(candidate => new BackgroundCandidateChoice(
+                candidate.Name,
+                $"{candidate.Name}  {ToMb(candidate.WorkingSetBytes):0} MB"))
+            .ToArray();
+
+        BackgroundCandidateCombo.ItemsSource = _backgroundCandidateChoices;
+        BackgroundCandidateCombo.SelectedIndex = _backgroundCandidateChoices.Count > 0 ? 0 : -1;
+    }
+
     private void GameProcessCombo_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
         if (GameProcessCombo.SelectedItem is ProcessChoice choice)
@@ -224,6 +240,39 @@ public partial class MainWindow : Window
         var executablePath = process.MainModulePath ?? process.Name;
         var profile = GameProfileFactory.Create(process.Name, executablePath);
         await _gameProfileStore.SaveAsync(profile);
+        _activeGameProfileId = profile.Id;
+        await RefreshGameLibraryAsync();
+    }
+
+    private async void AllowBackgroundCandidate_Click(object sender, RoutedEventArgs e)
+    {
+        await AddAllowedBackgroundCandidateAsync();
+    }
+
+    private async Task AddAllowedBackgroundCandidateAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_activeGameProfileId))
+        {
+            GameLibraryList.Items.Add("请先保存一个游戏配置。");
+            return;
+        }
+
+        if (BackgroundCandidateCombo.SelectedItem is not BackgroundCandidateChoice choice)
+        {
+            GameLibraryList.Items.Add("请先选择一个后台候选。");
+            return;
+        }
+
+        var profiles = await _gameProfileStore.ListAsync();
+        var profile = profiles.FirstOrDefault(profileItem => profileItem.Id == _activeGameProfileId);
+        if (profile is null)
+        {
+            GameLibraryList.Items.Add("当前游戏配置不存在。");
+            return;
+        }
+
+        var updated = GameProfileUpdater.AddAllowedBackgroundProcess(profile, choice.ProcessName);
+        await _gameProfileStore.SaveAsync(updated);
         await RefreshGameLibraryAsync();
     }
 
@@ -289,7 +338,8 @@ public partial class MainWindow : Window
 
         foreach (var profile in profiles.Take(5))
         {
-            GameLibraryList.Items.Add($"{profile.Name}  {profile.RecommendedMode}  自动恢复 {(profile.AutoRestoreOnExit ? "开" : "关")}");
+            GameLibraryList.Items.Add(
+                $"{profile.Name}  {profile.RecommendedMode}  自动恢复 {(profile.AutoRestoreOnExit ? "开" : "关")}  允许暂停 {profile.AllowedBackgroundProcessNames.Count}");
         }
     }
 
@@ -388,4 +438,6 @@ public partial class MainWindow : Window
     }
 
     private sealed record ProcessChoice(int? ProcessId, string DisplayName);
+
+    private sealed record BackgroundCandidateChoice(string ProcessName, string DisplayName);
 }

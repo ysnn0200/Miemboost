@@ -272,8 +272,16 @@
                                          Background="Transparent" BorderThickness="0"
                                          Foreground="{StaticResource TextPrimaryBrush}" />
                             </StackPanel>
-                            <Button Grid.Column="1" Width="146" Height="42" Content="保存当前进程"
-                                    Click="SaveSelectedGame_Click" />
+                            <StackPanel Grid.Column="1" Width="190">
+                                <Button Height="36" Content="保存当前进程"
+                                        Click="SaveSelectedGame_Click" />
+                                <ComboBox x:Name="BackgroundCandidateCombo"
+                                          Height="32"
+                                          Margin="0,8,0,0"
+                                          DisplayMemberPath="DisplayName" />
+                                <Button Height="34" Margin="0,8,0,0" Content="允许暂停候选"
+                                        Click="AllowBackgroundCandidate_Click" />
+                            </StackPanel>
                         </Grid>
                     </Border>
                 </Grid>
