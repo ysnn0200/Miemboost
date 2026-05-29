@@ -81,7 +81,7 @@
                 <DockPanel Grid.Row="0" LastChildFill="False">
                     <StackPanel DockPanel.Dock="Left">
                         <TextBlock Text="Miemboost" Foreground="{StaticResource TextPrimaryBrush}" FontSize="28" FontWeight="SemiBold" />
-                        <TextBlock Text="安静、可信、可恢复的游戏性能助手"
+                        <TextBlock x:Name="VersionText" Text="v0.1.0-alpha"
                                    Foreground="{StaticResource TextSecondaryBrush}" FontSize="14" Margin="0,8,0,0" />
                     </StackPanel>
 

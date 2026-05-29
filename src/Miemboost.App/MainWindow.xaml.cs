@@ -1,6 +1,8 @@
 using System.IO;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Threading;
+using Miemboost.Core.AppInfo;
 using Forms = System.Windows.Forms;
 using Miemboost.Core.Diagnostics;
 using Miemboost.Core.Execution;
@@ -48,6 +50,8 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        var versionInfo = AppVersionReader.Read(Assembly.GetExecutingAssembly());
+        VersionText.Text = $"{versionInfo.ProductName} {versionInfo.InformationalVersion}";
 
         var powerPlanManager = new WindowsPowerPlanManager();
         var processPriorityManager = new WindowsProcessPriorityManager();
@@ -94,7 +98,7 @@ public partial class MainWindow : Window
 
         _notifyIcon = new Forms.NotifyIcon
         {
-            Text = "Miemboost",
+            Text = VersionText.Text.Length > 63 ? "Miemboost" : VersionText.Text,
             Icon = System.Drawing.SystemIcons.Application,
             ContextMenuStrip = menu,
             Visible = true
