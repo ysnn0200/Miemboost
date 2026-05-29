@@ -46,7 +46,7 @@ Deliverables:
 - Action handler registry. Started.
 - JSON snapshot persistence. Started.
 - Power plan switch and restore. Started.
-- Process priority change and restore.
+- Process priority change and restore. Started.
 - User-approved background app pause/close with restore record.
 - Optimization history.
 

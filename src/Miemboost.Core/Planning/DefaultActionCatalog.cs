@@ -1,4 +1,5 @@
 using Miemboost.Core.Models;
+using Miemboost.Core.Processes;
 
 namespace Miemboost.Core.Planning;
 
@@ -21,6 +22,18 @@ public static class DefaultActionCatalog
         RiskLevel: RiskLevel.Balanced,
         RequiresElevation: false,
         CanRestore: true);
+
+    public static OptimizationActionDescriptor CreateGamePriorityHighAction(int processId)
+    {
+        return GamePriorityHigh with
+        {
+            Parameters = new Dictionary<string, string>
+            {
+                [ProcessPriorityActionParameters.ProcessId] = processId.ToString(),
+                [ProcessPriorityActionParameters.TargetPriority] = ManagedProcessPriority.High.ToString()
+            }
+        };
+    }
 
     public static readonly OptimizationActionDescriptor PauseApprovedBackgroundApps = new(
         Id: "process.pause-approved-background-apps",

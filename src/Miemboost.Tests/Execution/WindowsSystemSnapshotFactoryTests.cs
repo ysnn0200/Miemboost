@@ -1,6 +1,7 @@
 using Miemboost.Core.Models;
 using Miemboost.Core.Planning;
 using Miemboost.Core.Power;
+using Miemboost.Core.Processes;
 using Miemboost.Windows.Execution;
 
 namespace Miemboost.Tests.Execution;
@@ -41,6 +42,26 @@ public sealed class WindowsSystemSnapshotFactoryTests
         Assert.Equal(0, manager.GetActivePlanCallCount);
     }
 
+    [Fact]
+    public async Task CreateAsync_CapturesPreviousProcessPriorityWhenPriorityActionIsPresent()
+    {
+        var factory = new WindowsSystemSnapshotFactory(
+            new StubPowerPlanManager(),
+            new StubProcessPriorityManager());
+        var plan = new OptimizationPlan(
+            Id: "plan",
+            Mode: BoostMode.Balanced,
+            GameProfileId: null,
+            Actions: [DefaultActionCatalog.CreateGamePriorityHighAction(123)],
+            CreatedAt: DateTimeOffset.UnixEpoch);
+
+        var snapshot = await factory.CreateAsync(plan);
+
+        var priority = Assert.Single(snapshot.ProcessPriorities);
+        Assert.Equal(123, priority.ProcessId);
+        Assert.Equal(ManagedProcessPriority.Normal.ToString(), priority.PreviousPriorityClass);
+    }
+
     private sealed class StubPowerPlanManager : IPowerPlanManager
     {
         public int GetActivePlanCallCount { get; private set; }
@@ -52,6 +73,24 @@ public sealed class WindowsSystemSnapshotFactoryTests
         }
 
         public Task SetActivePlanAsync(string planId, CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class StubProcessPriorityManager : IProcessPriorityManager
+    {
+        public Task<ManagedProcessPriority?> GetPriorityAsync(
+            int processId,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<ManagedProcessPriority?>(ManagedProcessPriority.Normal);
+        }
+
+        public Task SetPriorityAsync(
+            int processId,
+            ManagedProcessPriority priority,
+            CancellationToken cancellationToken = default)
         {
             return Task.CompletedTask;
         }

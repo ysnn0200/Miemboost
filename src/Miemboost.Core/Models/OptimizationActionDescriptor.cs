@@ -7,4 +7,9 @@ public sealed record OptimizationActionDescriptor(
     OptimizationActionKind Kind,
     RiskLevel RiskLevel,
     bool RequiresElevation,
-    bool CanRestore);
+    bool CanRestore,
+    IReadOnlyDictionary<string, string>? Parameters = null)
+{
+    public IReadOnlyDictionary<string, string> Parameters { get; init; } =
+        Parameters ?? new Dictionary<string, string>();
+}
