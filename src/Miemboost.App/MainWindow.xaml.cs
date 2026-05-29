@@ -46,6 +46,7 @@ public partial class MainWindow : Window
     private GameProfile? _activeGameProfile;
     private DispatcherTimer? _autoRestoreTimer;
     private int? _boostedGameProcessId;
+    private bool _isBoosting;
     private bool _isRestoring;
     private Forms.NotifyIcon? _notifyIcon;
     private bool _isExitRequested;
@@ -304,31 +305,54 @@ public partial class MainWindow : Window
 
     private async Task ExecuteBoostAsync()
     {
-        var plan = _lastPlan ?? _planFactory.Create(
-            BoostMode.Balanced,
-            gameProfileId: _activeGameProfileId,
-            gameProcessId: _selectedGameProcessId,
-            gameProfile: _activeGameProfile,
-            processes: _latestProcesses);
-        _lastPlan = plan;
-
-        PlanList.Items.Clear();
-        PlanList.Items.Add("正在保存快照并执行安全动作...");
-
-        var report = await _executor.ExecuteAsync(plan);
-        _lastSnapshotId = report.SnapshotId;
-        RestoreButton.IsEnabled = true;
-        await _historyStore.AddAsync(OptimizationHistoryEntryFactory.FromExecution(report, plan.Mode));
-        StartAutoRestoreMonitor();
-
-        PlanList.Items.Clear();
-        PlanList.Items.Add($"快照：{report.SnapshotId}");
-        foreach (var result in report.Results)
+        if (_isBoosting || _isRestoring)
         {
-            PlanList.Items.Add($"{ToChineseExecutionStatus(result.Status)}  {result.ActionId} - {result.Message}");
+            return;
         }
 
-        await RefreshHistoryAsync();
+        _isBoosting = true;
+        BoostButton.IsEnabled = false;
+        RestoreButton.IsEnabled = false;
+
+        try
+        {
+            var plan = _lastPlan ?? _planFactory.Create(
+                BoostMode.Balanced,
+                gameProfileId: _activeGameProfileId,
+                gameProcessId: _selectedGameProcessId,
+                gameProfile: _activeGameProfile,
+                processes: _latestProcesses);
+            _lastPlan = plan;
+
+            PlanList.Items.Clear();
+            PlanList.Items.Add("正在保存快照并执行安全动作...");
+
+            var report = await _executor.ExecuteAsync(plan);
+            _lastSnapshotId = report.SnapshotId;
+            RestoreButton.IsEnabled = true;
+            await _historyStore.AddAsync(OptimizationHistoryEntryFactory.FromExecution(report, plan.Mode));
+            StartAutoRestoreMonitor();
+
+            PlanList.Items.Clear();
+            PlanList.Items.Add($"快照：{report.SnapshotId}");
+            foreach (var result in report.Results)
+            {
+                PlanList.Items.Add($"{ToChineseExecutionStatus(result.Status)}  {result.ActionId} - {result.Message}");
+            }
+
+            await RefreshHistoryAsync();
+        }
+        catch (Exception exception)
+        {
+            PlanList.Items.Clear();
+            PlanList.Items.Add($"Boost 执行失败：{exception.Message}");
+        }
+        finally
+        {
+            _isBoosting = false;
+            BoostButton.IsEnabled = true;
+            RestoreButton.IsEnabled = !string.IsNullOrWhiteSpace(_lastSnapshotId);
+        }
     }
 
     private void StartAutoRestoreMonitor()
@@ -474,33 +498,47 @@ public partial class MainWindow : Window
         }
 
         _isRestoring = true;
+        BoostButton.IsEnabled = false;
+        RestoreButton.IsEnabled = false;
         _autoRestoreTimer?.Stop();
 
-        var snapshot = await _snapshotStore.GetAsync(_lastSnapshotId);
-        if (snapshot is null)
+        try
         {
-            PlanList.Items.Add("未找到可恢复快照。");
+            var snapshot = await _snapshotStore.GetAsync(_lastSnapshotId);
+            if (snapshot is null)
+            {
+                PlanList.Items.Add("未找到可恢复快照。");
+                return;
+            }
+
+            PlanList.Items.Clear();
+            PlanList.Items.Add("正在按快照恢复...");
+
+            var report = await _restorer.RestoreAsync(_lastPlan, snapshot);
+            _lastSnapshotId = null;
+            _boostedGameProcessId = null;
+            SessionStateText.Text = "Restore completed. System changes were reverted where possible.";
+            await _historyStore.AddAsync(OptimizationHistoryEntryFactory.FromRestore(report, _lastPlan.Mode));
+
+            PlanList.Items.Clear();
+            foreach (var result in report.Results)
+            {
+                PlanList.Items.Add($"{ToChineseExecutionStatus(result.Status)}  {result.ActionId} - {result.Message}");
+            }
+
+            await RefreshHistoryAsync();
+        }
+        catch (Exception exception)
+        {
+            PlanList.Items.Clear();
+            PlanList.Items.Add($"恢复失败：{exception.Message}");
+        }
+        finally
+        {
             _isRestoring = false;
-            return;
+            BoostButton.IsEnabled = true;
+            RestoreButton.IsEnabled = !string.IsNullOrWhiteSpace(_lastSnapshotId);
         }
-
-        PlanList.Items.Clear();
-        PlanList.Items.Add("正在按快照恢复...");
-
-        var report = await _restorer.RestoreAsync(_lastPlan, snapshot);
-        RestoreButton.IsEnabled = false;
-        _boostedGameProcessId = null;
-        SessionStateText.Text = "Restore completed. System changes were reverted where possible.";
-        await _historyStore.AddAsync(OptimizationHistoryEntryFactory.FromRestore(report, _lastPlan.Mode));
-
-        PlanList.Items.Clear();
-        foreach (var result in report.Results)
-        {
-            PlanList.Items.Add($"{ToChineseExecutionStatus(result.Status)}  {result.ActionId} - {result.Message}");
-        }
-
-        await RefreshHistoryAsync();
-        _isRestoring = false;
     }
 
     private async Task RefreshHistoryAsync()

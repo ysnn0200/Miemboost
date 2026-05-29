@@ -161,7 +161,8 @@
                         </StackPanel>
 
                         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                            <Button Width="150"
+                            <Button x:Name="BoostButton"
+                                    Width="150"
                                     Height="58"
                                     Background="{StaticResource AccentBrush}"
                                     Foreground="White"
