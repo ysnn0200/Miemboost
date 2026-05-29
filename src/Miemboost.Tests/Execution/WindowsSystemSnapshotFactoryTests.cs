@@ -62,6 +62,24 @@ public sealed class WindowsSystemSnapshotFactoryTests
         Assert.Equal(ManagedProcessPriority.Normal.ToString(), priority.PreviousPriorityClass);
     }
 
+    [Fact]
+    public async Task CreateAsync_CapturesPreviousPriorityForBackgroundPauseAction()
+    {
+        var factory = new WindowsSystemSnapshotFactory(
+            new StubPowerPlanManager(),
+            new StubProcessPriorityManager());
+        var plan = new OptimizationPlan(
+            Id: "plan",
+            Mode: BoostMode.Balanced,
+            GameProfileId: null,
+            Actions: [DefaultActionCatalog.CreatePauseApprovedBackgroundAppsAction([123, 124])],
+            CreatedAt: DateTimeOffset.UnixEpoch);
+
+        var snapshot = await factory.CreateAsync(plan);
+
+        Assert.Equal(2, snapshot.ProcessPriorities.Count);
+    }
+
     private sealed class StubPowerPlanManager : IPowerPlanManager
     {
         public int GetActivePlanCallCount { get; private set; }

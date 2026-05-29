@@ -41,30 +41,49 @@ public sealed class WindowsSystemSnapshotFactory(
     {
         var snapshots = new List<ProcessPrioritySnapshot>();
 
-        foreach (var action in plan.Actions.Where(action => action.Kind == OptimizationActionKind.ProcessPriorityChange))
+        foreach (var action in plan.Actions.Where(action =>
+            action.Kind is OptimizationActionKind.ProcessPriorityChange or OptimizationActionKind.BackgroundAppPause))
         {
-            if (!action.Parameters.TryGetValue(ProcessPriorityActionParameters.ProcessId, out var processIdText)
-                || !int.TryParse(processIdText, out var processId)
-                || processId <= 0)
+            foreach (var processId in ReadProcessIds(action))
             {
-                continue;
+                var priority = await processPriorityManager
+                    .GetPriorityAsync(processId, cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (priority is null || snapshots.Any(snapshot => snapshot.ProcessId == processId))
+                {
+                    continue;
+                }
+
+                snapshots.Add(new ProcessPrioritySnapshot(
+                    ProcessId: processId,
+                    ProcessName: action.Title,
+                    PreviousPriorityClass: priority.Value.ToString()));
             }
-
-            var priority = await processPriorityManager
-                .GetPriorityAsync(processId, cancellationToken)
-                .ConfigureAwait(false);
-
-            if (priority is null)
-            {
-                continue;
-            }
-
-            snapshots.Add(new ProcessPrioritySnapshot(
-                ProcessId: processId,
-                ProcessName: action.Title,
-                PreviousPriorityClass: priority.Value.ToString()));
         }
 
         return snapshots;
+    }
+
+    private static IReadOnlyList<int> ReadProcessIds(OptimizationActionDescriptor action)
+    {
+        if (action.Parameters.TryGetValue(ProcessPriorityActionParameters.ProcessId, out var processIdText)
+            && int.TryParse(processIdText, out var processId)
+            && processId > 0)
+        {
+            return [processId];
+        }
+
+        if (!action.Parameters.TryGetValue(BackgroundAppPauseActionParameters.ProcessIds, out var processIdsText))
+        {
+            return [];
+        }
+
+        return processIdsText
+            .Split([';', ','], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(text => int.TryParse(text, out var parsedProcessId) ? parsedProcessId : 0)
+            .Where(parsedProcessId => parsedProcessId > 0)
+            .Distinct()
+            .ToArray();
     }
 }

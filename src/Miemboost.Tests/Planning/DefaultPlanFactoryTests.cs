@@ -1,6 +1,7 @@
 using Miemboost.Core.Models;
 using Miemboost.Core.Planning;
 using Miemboost.Core.Processes;
+using Miemboost.Core.Diagnostics;
 
 namespace Miemboost.Tests.Planning;
 
@@ -22,5 +23,70 @@ public sealed class DefaultPlanFactoryTests
         var action = Assert.Single(plan.Actions, action => action.Kind == OptimizationActionKind.ProcessPriorityChange);
         Assert.Equal("123", action.Parameters[ProcessPriorityActionParameters.ProcessId]);
         Assert.Equal(ManagedProcessPriority.High.ToString(), action.Parameters[ProcessPriorityActionParameters.TargetPriority]);
+    }
+
+    [Fact]
+    public void Create_IncludesApprovedBackgroundPauseActionFromProfile()
+    {
+        var profile = new GameProfile(
+            Id: "game",
+            Name: "Game",
+            ExecutablePath: "game.exe",
+            RecommendedMode: BoostMode.Balanced,
+            AutoRestoreOnExit: true,
+            AllowedBackgroundProcessNames: ["Discord"],
+            NetworkTargets: []);
+
+        var processes = new[]
+        {
+            new ProcessSnapshot(
+                ProcessId: 321,
+                Name: "Discord",
+                MainModulePath: null,
+                WorkingSetBytes: 500,
+                TotalProcessorTime: TimeSpan.Zero,
+                IsProtectedCandidate: false)
+        };
+
+        var plan = new DefaultPlanFactory().Create(
+            BoostMode.Balanced,
+            gameProfileId: profile.Id,
+            gameProfile: profile,
+            processes: processes);
+
+        var action = Assert.Single(plan.Actions, action => action.Kind == OptimizationActionKind.BackgroundAppPause);
+        Assert.Equal("321", action.Parameters[BackgroundAppPauseActionParameters.ProcessIds]);
+    }
+
+    [Fact]
+    public void Create_DoesNotIncludeProtectedBackgroundProcessEvenWhenAllowedByName()
+    {
+        var profile = new GameProfile(
+            Id: "game",
+            Name: "Game",
+            ExecutablePath: "game.exe",
+            RecommendedMode: BoostMode.Balanced,
+            AutoRestoreOnExit: true,
+            AllowedBackgroundProcessNames: ["vgc"],
+            NetworkTargets: []);
+
+        var processes = new[]
+        {
+            new ProcessSnapshot(
+                ProcessId: 321,
+                Name: "vgc",
+                MainModulePath: null,
+                WorkingSetBytes: 500,
+                TotalProcessorTime: TimeSpan.Zero,
+                IsProtectedCandidate: true)
+        };
+
+        var plan = new DefaultPlanFactory().Create(
+            BoostMode.Balanced,
+            gameProfileId: profile.Id,
+            gameProfile: profile,
+            processes: processes);
+
+        Assert.DoesNotContain(plan.Actions, action => action.Kind == OptimizationActionKind.BackgroundAppPause);
     }
 }

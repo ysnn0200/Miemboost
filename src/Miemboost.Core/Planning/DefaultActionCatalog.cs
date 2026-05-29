@@ -38,11 +38,23 @@ public static class DefaultActionCatalog
     public static readonly OptimizationActionDescriptor PauseApprovedBackgroundApps = new(
         Id: "process.pause-approved-background-apps",
         Title: "Pause approved background apps",
-        Description: "Pause or close only the background apps allowed by the active game profile.",
+        Description: "Lower priority only for the background apps allowed by the active game profile.",
         Kind: OptimizationActionKind.BackgroundAppPause,
         RiskLevel: RiskLevel.Balanced,
         RequiresElevation: false,
         CanRestore: true);
+
+    public static OptimizationActionDescriptor CreatePauseApprovedBackgroundAppsAction(
+        IReadOnlyList<int> processIds)
+    {
+        return PauseApprovedBackgroundApps with
+        {
+            Parameters = new Dictionary<string, string>
+            {
+                [BackgroundAppPauseActionParameters.ProcessIds] = string.Join(";", processIds)
+            }
+        };
+    }
 
     public static readonly OptimizationActionDescriptor ReleaseStandbyMemory = new(
         Id: "memory.release-standby",

@@ -33,6 +33,7 @@ public partial class MainWindow : Window
     private IReadOnlyList<ProcessSnapshot> _latestProcesses = [];
     private IReadOnlyList<BackgroundCandidateChoice> _backgroundCandidateChoices = [];
     private string? _activeGameProfileId;
+    private GameProfile? _activeGameProfile;
 
     public MainWindow()
     {
@@ -43,7 +44,8 @@ public partial class MainWindow : Window
         var handlerRegistry = new OptimizationActionHandlerRegistry(
         [
             new PowerPlanSwitchActionHandler(powerPlanManager),
-            new ProcessPriorityActionHandler(processPriorityManager)
+            new ProcessPriorityActionHandler(processPriorityManager),
+            new BackgroundAppPauseActionHandler(processPriorityManager)
         ]);
 
         _snapshotStore = new JsonSystemSnapshotStore(GetSnapshotDirectoryPath());
@@ -136,7 +138,12 @@ public partial class MainWindow : Window
 
     private void ShowBoostPreview()
     {
-        var plan = _planFactory.Create(BoostMode.Balanced, gameProcessId: _selectedGameProcessId);
+        var plan = _planFactory.Create(
+            BoostMode.Balanced,
+            gameProfileId: _activeGameProfileId,
+            gameProcessId: _selectedGameProcessId,
+            gameProfile: _activeGameProfile,
+            processes: _latestProcesses);
         _lastPlan = plan;
 
         PlanList.Items.Clear();
@@ -191,7 +198,12 @@ public partial class MainWindow : Window
 
     private async Task ExecuteBoostAsync()
     {
-        var plan = _lastPlan ?? _planFactory.Create(BoostMode.Balanced, gameProcessId: _selectedGameProcessId);
+        var plan = _lastPlan ?? _planFactory.Create(
+            BoostMode.Balanced,
+            gameProfileId: _activeGameProfileId,
+            gameProcessId: _selectedGameProcessId,
+            gameProfile: _activeGameProfile,
+            processes: _latestProcesses);
         _lastPlan = plan;
 
         PlanList.Items.Clear();
@@ -241,6 +253,7 @@ public partial class MainWindow : Window
         var profile = GameProfileFactory.Create(process.Name, executablePath);
         await _gameProfileStore.SaveAsync(profile);
         _activeGameProfileId = profile.Id;
+        _activeGameProfile = profile;
         await RefreshGameLibraryAsync();
     }
 
@@ -273,7 +286,10 @@ public partial class MainWindow : Window
 
         var updated = GameProfileUpdater.AddAllowedBackgroundProcess(profile, choice.ProcessName);
         await _gameProfileStore.SaveAsync(updated);
+        _activeGameProfile = updated;
+        _activeGameProfileId = updated.Id;
         await RefreshGameLibraryAsync();
+        ShowBoostPreview();
     }
 
     private async Task RestoreAsync()
@@ -328,6 +344,11 @@ public partial class MainWindow : Window
     private async Task RefreshGameLibraryAsync()
     {
         var profiles = await _gameProfileStore.ListAsync();
+        if (_activeGameProfile is null && profiles.Count > 0)
+        {
+            _activeGameProfile = profiles[0];
+            _activeGameProfileId = profiles[0].Id;
+        }
 
         GameLibraryList.Items.Clear();
         if (profiles.Count == 0)
