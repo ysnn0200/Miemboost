@@ -202,7 +202,8 @@
                             <TextBlock x:Name="OverallStatusText" Text="检测中" Foreground="{StaticResource GoodBrush}" FontSize="32"
                                        FontWeight="SemiBold" Margin="0,22,0,0" />
                             <TextBlock x:Name="FindingCountText" Text="0 个建议" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,8,0,0" />
-                            <TextBlock Text="所有动作先预览，执行前保存快照" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,26,0,0" />
+                            <TextBlock x:Name="SessionStateText" Text="所有动作先预览，执行前保存快照"
+                                       Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,26,0,0" />
                         </StackPanel>
                     </Border>
 

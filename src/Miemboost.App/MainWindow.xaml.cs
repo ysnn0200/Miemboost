@@ -240,6 +240,7 @@ public partial class MainWindow : Window
 
         if (_boostedGameProcessId is null || _activeGameProfile?.AutoRestoreOnExit != true)
         {
+            SessionStateText.Text = "Boost completed. Manual restore is available.";
             return;
         }
 
@@ -249,6 +250,7 @@ public partial class MainWindow : Window
         };
         _autoRestoreTimer.Tick += async (_, _) => await AutoRestoreTimerTickAsync();
         _autoRestoreTimer.Start();
+        SessionStateText.Text = $"Boost active. Auto-restore is watching PID {_boostedGameProcessId}.";
     }
 
     private async Task AutoRestoreTimerTickAsync()
@@ -264,6 +266,7 @@ public partial class MainWindow : Window
         }
 
         _autoRestoreTimer?.Stop();
+        SessionStateText.Text = "Game exit detected. Restoring snapshot...";
         PlanList.Items.Add("Detected game exit, restoring snapshot...");
         await RestoreAsync();
     }
@@ -389,6 +392,7 @@ public partial class MainWindow : Window
         var report = await _restorer.RestoreAsync(_lastPlan, snapshot);
         RestoreButton.IsEnabled = false;
         _boostedGameProcessId = null;
+        SessionStateText.Text = "Restore completed. System changes were reverted where possible.";
         await _historyStore.AddAsync(OptimizationHistoryEntryFactory.FromRestore(report, _lastPlan.Mode));
 
         PlanList.Items.Clear();
