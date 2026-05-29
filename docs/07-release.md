@@ -30,6 +30,12 @@ For a larger self-contained build:
 .\scripts\publish-windows.ps1 -SelfContained
 ```
 
+For a self-contained zip package:
+
+```powershell
+.\scripts\package-windows.ps1 -SelfContained
+```
+
 ## Current Packaging Status
 
 This is a portable publish folder, not an installer yet. Code signing and installer creation are later release steps.

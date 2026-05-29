@@ -69,3 +69,11 @@ D:\代码\.dotnet\dotnet.exe run --project src\Miemboost.App\Miemboost.App.cspro
 ```
 
 The portable output is written to `artifacts\publish\Miemboost-win-x64`.
+
+To create a zip package:
+
+```powershell
+.\scripts\package-windows.ps1
+```
+
+Use `-SelfContained` for a larger package that does not require the target machine to install the .NET Desktop Runtime.
