@@ -5,14 +5,21 @@ namespace Miemboost.Core.Planning;
 
 public sealed class DefaultPlanFactory
 {
-    public OptimizationPlan Create(BoostMode mode, string? gameProfileId = null)
+    public OptimizationPlan Create(
+        BoostMode mode,
+        string? gameProfileId = null,
+        int? gameProcessId = null)
     {
         var builder = new OptimizationPlanBuilder(new SafetyPolicy())
             .Add(DefaultActionCatalog.PowerPlanSwitch)
-            .Add(DefaultActionCatalog.GamePriorityHigh)
             .Add(DefaultActionCatalog.PauseApprovedBackgroundApps)
             .Add(DefaultActionCatalog.ReleaseStandbyMemory)
             .Add(DefaultActionCatalog.NetworkDiagnostics);
+
+        if (gameProcessId is > 0)
+        {
+            builder.Add(DefaultActionCatalog.CreateGamePriorityHighAction(gameProcessId.Value));
+        }
 
         return builder.Build(mode, gameProfileId);
     }

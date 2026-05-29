@@ -21,6 +21,7 @@ public partial class MainWindow : Window
     private readonly DefaultPlanFactory _planFactory = new();
     private OptimizationPlan? _lastPlan;
     private string? _lastSnapshotId;
+    private int? _selectedGameProcessId;
 
     public MainWindow()
     {
@@ -62,6 +63,7 @@ public partial class MainWindow : Window
                 PingTimeout: TimeSpan.FromMilliseconds(900)));
 
             RenderDiagnostics(report);
+            RenderProcessChoices(report.System.Processes);
         }
         catch (Exception exception)
         {
@@ -112,7 +114,7 @@ public partial class MainWindow : Window
 
     private void ShowBoostPreview()
     {
-        var plan = _planFactory.Create(BoostMode.Balanced);
+        var plan = _planFactory.Create(BoostMode.Balanced, gameProcessId: _selectedGameProcessId);
         _lastPlan = plan;
 
         PlanList.Items.Clear();
@@ -122,9 +124,39 @@ public partial class MainWindow : Window
         }
     }
 
+    private void RenderProcessChoices(IReadOnlyList<ProcessSnapshot> processes)
+    {
+        var previousSelection = _selectedGameProcessId;
+        var options = new List<ProcessChoice>
+        {
+            new(null, "未选择游戏进程")
+        };
+
+        options.AddRange(processes
+            .Where(process => !process.IsProtectedCandidate)
+            .Where(process => !string.Equals(process.Name, "Miemboost", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(process => process.WorkingSetBytes)
+            .Take(12)
+            .Select(process => new ProcessChoice(
+                process.ProcessId,
+                $"{process.Name}  PID {process.ProcessId}  {ToMb(process.WorkingSetBytes):0} MB")));
+
+        GameProcessCombo.ItemsSource = options;
+        GameProcessCombo.SelectedItem = options.FirstOrDefault(option => option.ProcessId == previousSelection) ?? options[0];
+    }
+
+    private void GameProcessCombo_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (GameProcessCombo.SelectedItem is ProcessChoice choice)
+        {
+            _selectedGameProcessId = choice.ProcessId;
+            ShowBoostPreview();
+        }
+    }
+
     private async Task ExecuteBoostAsync()
     {
-        var plan = _lastPlan ?? _planFactory.Create(BoostMode.Balanced);
+        var plan = _lastPlan ?? _planFactory.Create(BoostMode.Balanced, gameProcessId: _selectedGameProcessId);
         _lastPlan = plan;
 
         PlanList.Items.Clear();
@@ -194,6 +226,11 @@ public partial class MainWindow : Window
         return bytes / 1024d / 1024d / 1024d;
     }
 
+    private static double ToMb(long bytes)
+    {
+        return bytes / 1024d / 1024d;
+    }
+
     private static string ToChineseStatus(DiagnosticSeverity severity)
     {
         return severity switch
@@ -236,4 +273,6 @@ public partial class MainWindow : Window
             "Miemboost",
             "Snapshots");
     }
+
+    private sealed record ProcessChoice(int? ProcessId, string DisplayName);
 }
