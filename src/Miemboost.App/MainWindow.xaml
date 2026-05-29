@@ -268,7 +268,11 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel>
                                 <TextBlock Text="游戏库" Foreground="{StaticResource TextPrimaryBrush}" FontSize="18" FontWeight="SemiBold" />
-                                <ListBox x:Name="GameLibraryList" Margin="0,12,0,0" Height="76"
+                                <TextBlock x:Name="ActiveProfileText"
+                                           Text="Current profile: none"
+                                           Foreground="{StaticResource TextSecondaryBrush}"
+                                           Margin="0,6,0,0" />
+                                <ListBox x:Name="GameLibraryList" Margin="0,12,0,0" Height="58"
                                          Background="Transparent" BorderThickness="0"
                                          Foreground="{StaticResource TextPrimaryBrush}"
                                          DisplayMemberPath="DisplayName"
@@ -283,6 +287,8 @@
                                           DisplayMemberPath="DisplayName" />
                                 <Button Height="34" Margin="0,8,0,0" Content="允许暂停候选"
                                         Click="AllowBackgroundCandidate_Click" />
+                                <Button Height="30" Margin="0,8,0,0" Content="Delete profile"
+                                        Click="DeleteActiveGame_Click" />
                             </StackPanel>
                         </Grid>
                     </Border>

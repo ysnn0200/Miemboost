@@ -256,6 +256,7 @@ public partial class MainWindow : Window
         _activeGameProfileId = profile.Id;
         _activeGameProfile = profile;
         await RefreshGameLibraryAsync();
+        UpdateActiveProfileText();
         ShowBoostPreview();
     }
 
@@ -291,6 +292,28 @@ public partial class MainWindow : Window
         _activeGameProfile = updated;
         _activeGameProfileId = updated.Id;
         await RefreshGameLibraryAsync();
+        UpdateActiveProfileText();
+        ShowBoostPreview();
+    }
+
+    private async void DeleteActiveGame_Click(object sender, RoutedEventArgs e)
+    {
+        await DeleteActiveGameAsync();
+    }
+
+    private async Task DeleteActiveGameAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_activeGameProfileId))
+        {
+            GameLibraryList.Items.Add("No active profile to delete.");
+            return;
+        }
+
+        await _gameProfileStore.DeleteAsync(_activeGameProfileId);
+        _activeGameProfileId = null;
+        _activeGameProfile = null;
+        await RefreshGameLibraryAsync();
+        UpdateActiveProfileText();
         ShowBoostPreview();
     }
 
@@ -351,6 +374,7 @@ public partial class MainWindow : Window
             _activeGameProfile = profiles[0];
             _activeGameProfileId = profiles[0].Id;
         }
+        UpdateActiveProfileText();
 
         GameLibraryList.Items.Clear();
         if (profiles.Count == 0)
@@ -390,7 +414,15 @@ public partial class MainWindow : Window
 
         _activeGameProfile = profile;
         _activeGameProfileId = profile.Id;
+        UpdateActiveProfileText();
         ShowBoostPreview();
+    }
+
+    private void UpdateActiveProfileText()
+    {
+        ActiveProfileText.Text = _activeGameProfile is null
+            ? "Current profile: none"
+            : $"Current profile: {_activeGameProfile.Name} / allowed {_activeGameProfile.AllowedBackgroundProcessNames.Count}";
     }
 
     private void Minimize_Click(object sender, RoutedEventArgs e)
