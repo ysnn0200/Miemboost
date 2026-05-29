@@ -1,6 +1,7 @@
 using System.IO;
 using System.Windows;
 using System.Windows.Threading;
+using Forms = System.Windows.Forms;
 using Miemboost.Core.Diagnostics;
 using Miemboost.Core.Execution;
 using Miemboost.Core.Games;
@@ -41,6 +42,8 @@ public partial class MainWindow : Window
     private DispatcherTimer? _autoRestoreTimer;
     private int? _boostedGameProcessId;
     private bool _isRestoring;
+    private Forms.NotifyIcon? _notifyIcon;
+    private bool _isExitRequested;
 
     public MainWindow()
     {
@@ -71,7 +74,69 @@ public partial class MainWindow : Window
         Loaded += async (_, _) => await RefreshDiagnosticsAsync();
         Loaded += async (_, _) => await RefreshHistoryAsync();
         Loaded += async (_, _) => await RefreshGameLibraryAsync();
+        StateChanged += MainWindow_StateChanged;
+        Closing += MainWindow_Closing;
+        Closed += MainWindow_Closed;
+        InitializeTrayIcon();
         ShowBoostPreview();
+    }
+
+    private void InitializeTrayIcon()
+    {
+        var menu = new Forms.ContextMenuStrip();
+        menu.Items.Add("Show Miemboost", null, (_, _) => ShowFromTray());
+        menu.Items.Add("Exit", null, (_, _) =>
+        {
+            _isExitRequested = true;
+            Close();
+        });
+
+        _notifyIcon = new Forms.NotifyIcon
+        {
+            Text = "Miemboost",
+            Icon = System.Drawing.SystemIcons.Application,
+            ContextMenuStrip = menu,
+            Visible = true
+        };
+        _notifyIcon.DoubleClick += (_, _) => ShowFromTray();
+    }
+
+    private void MainWindow_StateChanged(object? sender, EventArgs e)
+    {
+        if (WindowState == WindowState.Minimized)
+        {
+            HideToTray();
+        }
+    }
+
+    private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
+    {
+        if (_isExitRequested)
+        {
+            return;
+        }
+
+        e.Cancel = true;
+        HideToTray();
+    }
+
+    private void MainWindow_Closed(object? sender, EventArgs e)
+    {
+        _autoRestoreTimer?.Stop();
+        _notifyIcon?.Dispose();
+    }
+
+    private void HideToTray()
+    {
+        Hide();
+        SessionStateText.Text = "Miemboost is running in the tray. Restore remains available.";
+    }
+
+    private void ShowFromTray()
+    {
+        Show();
+        WindowState = WindowState.Normal;
+        Activate();
     }
 
     private async Task RefreshDiagnosticsAsync()
@@ -504,7 +569,7 @@ public partial class MainWindow : Window
 
     private void Minimize_Click(object sender, RoutedEventArgs e)
     {
-        WindowState = WindowState.Minimized;
+        HideToTray();
     }
 
     private void Maximize_Click(object sender, RoutedEventArgs e)
@@ -514,7 +579,7 @@ public partial class MainWindow : Window
 
     private void Close_Click(object sender, RoutedEventArgs e)
     {
-        Close();
+        HideToTray();
     }
 
     private static double ToGb(ulong bytes)
