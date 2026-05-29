@@ -55,3 +55,17 @@ Miemboost/
 - Ping, jitter, loss, DNS diagnostics.
 - Per-game profile.
 
+## Build And Run
+
+```powershell
+D:\代码\.dotnet\dotnet.exe build Miemboost.sln --configuration Release
+D:\代码\.dotnet\dotnet.exe run --project src\Miemboost.App\Miemboost.App.csproj --configuration Release
+```
+
+## Publish
+
+```powershell
+.\scripts\publish-windows.ps1
+```
+
+The portable output is written to `artifacts\publish\Miemboost-win-x64`.

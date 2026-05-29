@@ -29,3 +29,6 @@ jobs:
 
       - name: Test
         run: dotnet test src/Miemboost.Tests/Miemboost.Tests.csproj --configuration Release --no-build --verbosity normal
+
+      - name: Publish app
+        run: dotnet publish src/Miemboost.App/Miemboost.App.csproj --configuration Release --runtime win-x64 --self-contained false --output artifacts/publish/Miemboost-win-x64
