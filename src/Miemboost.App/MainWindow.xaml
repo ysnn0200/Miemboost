@@ -4,48 +4,67 @@
         Title="Miemboost"
         Width="1180"
         Height="760"
-        MinWidth="1040"
-        MinHeight="680"
+        MinWidth="1080"
+        MinHeight="700"
         WindowStartupLocation="CenterScreen"
-        Background="{StaticResource AppBackgroundBrush}">
+        Background="#070B12"
+        FontFamily="Microsoft YaHei UI">
     <WindowChrome.WindowChrome>
-        <WindowChrome CaptionHeight="44" CornerRadius="16" GlassFrameThickness="0" ResizeBorderThickness="6" />
+        <WindowChrome CaptionHeight="48" CornerRadius="18" GlassFrameThickness="0" ResizeBorderThickness="6" />
     </WindowChrome.WindowChrome>
 
     <Border Margin="18"
             CornerRadius="18"
-            BorderBrush="#435064"
+            BorderBrush="#3D4A5E"
             BorderThickness="1"
             Background="#111923">
+        <Border.Effect>
+            <DropShadowEffect Color="#000000" BlurRadius="28" ShadowDepth="0" Opacity="0.45" />
+        </Border.Effect>
+
         <Grid>
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="240" />
+                <ColumnDefinition Width="218" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0"
-                    Background="#18212D"
                     CornerRadius="18,0,0,18"
-                    BorderBrush="#2F3B4C"
+                    BorderBrush="#2D394A"
                     BorderThickness="0,0,1,0">
-                <Grid Margin="18">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#202A38" Offset="0" />
+                        <GradientStop Color="#151D29" Offset="1" />
+                    </LinearGradientBrush>
+                </Border.Background>
+
+                <Grid Margin="18,20">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,6,0,26">
-                        <Border Width="34" Height="34" CornerRadius="9" Background="#273554">
-                            <TextBlock Text="M" Foreground="{StaticResource AccentBrush}" FontWeight="Bold" FontSize="22"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,28">
+                        <Border Width="36" Height="36" CornerRadius="10" Background="#2B3A63">
+                            <TextBlock Text="M"
+                                       Foreground="#7E8BFF"
+                                       FontWeight="Bold"
+                                       FontSize="23"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center" />
                         </Border>
-                        <TextBlock Text="Miemboost" Foreground="{StaticResource TextPrimaryBrush}" FontSize="18"
-                                   FontWeight="SemiBold" VerticalAlignment="Center" Margin="12,0,0,0" />
+                        <TextBlock Text="Miemboost"
+                                   Foreground="#F6F8FC"
+                                   FontSize="18"
+                                   FontWeight="SemiBold"
+                                   VerticalAlignment="Center"
+                                   Margin="12,0,0,0" />
                     </StackPanel>
 
                     <StackPanel Grid.Row="1">
-                        <Button Style="{StaticResource NavButtonStyle}" Background="#303B58" Foreground="{StaticResource TextPrimaryBrush}">
+                        <Button Style="{StaticResource NavButtonStyle}" Background="#34405F" Foreground="#FFFFFF">
                             <TextBlock Text="总览" />
                         </Button>
                         <Button Style="{StaticResource NavButtonStyle}">
@@ -71,68 +90,78 @@
                 </Grid>
             </Border>
 
-            <Grid Grid.Column="1" Margin="30">
+            <Grid Grid.Column="1" Margin="30,24,30,30">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="96" />
+                    <RowDefinition Height="224" />
                     <RowDefinition Height="*" />
+                    <RowDefinition Height="126" />
                 </Grid.RowDefinitions>
 
-                <DockPanel Grid.Row="0" LastChildFill="False">
+                <DockPanel Grid.Row="0" LastChildFill="False" Margin="0,0,0,18">
                     <StackPanel DockPanel.Dock="Left">
-                        <TextBlock Text="Miemboost" Foreground="{StaticResource TextPrimaryBrush}" FontSize="28" FontWeight="SemiBold" />
-                        <TextBlock x:Name="VersionText" Text="v0.1.0-alpha"
-                                   Foreground="{StaticResource TextSecondaryBrush}" FontSize="14" Margin="0,8,0,0" />
+                        <TextBlock Text="Miemboost"
+                                   Foreground="#FFFFFF"
+                                   FontSize="30"
+                                   FontWeight="SemiBold" />
+                        <TextBlock x:Name="VersionText"
+                                   Text="Miemboost 0.1.0-alpha"
+                                   Foreground="#AFC1DB"
+                                   FontSize="13"
+                                   Margin="0,8,0,0" />
                     </StackPanel>
 
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                        <Button Width="36" Height="32" Content="-" Click="Minimize_Click" />
-                        <Button Width="36" Height="32" Content="□" Click="Maximize_Click" Margin="8,0,0,0" />
-                        <Button Width="36" Height="32" Content="×" Click="Close_Click" Margin="8,0,0,0" />
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Margin="0,4,0,0">
+                        <Button Width="34" Height="30" Content="-" Click="Minimize_Click" />
+                        <Button Width="34" Height="30" Content="□" Click="Maximize_Click" Margin="8,0,0,0" />
+                        <Button Width="34" Height="30" Content="×" Click="Close_Click" Margin="8,0,0,0" />
                     </StackPanel>
                 </DockPanel>
 
                 <Border Grid.Row="1"
-                        Margin="0,26,0,18"
-                        Padding="18"
-                        CornerRadius="14"
-                        BorderThickness="1"
-                        BorderBrush="{StaticResource BorderBrushSoft}"
-                        Background="{StaticResource PanelBrush}">
+                        Style="{StaticResource GlassPanelStyle}"
+                        Padding="18">
                     <Grid>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="2*" />
-                            <ColumnDefinition Width="1.2*" />
+                            <ColumnDefinition Width="1.05*" />
+                            <ColumnDefinition Width="1.1*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
                         <StackPanel>
-                            <TextBlock Text="当前模式" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" />
-                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                                <Border Background="#263248" CornerRadius="10" Padding="14,8">
-                                    <TextBlock Text="保守" Foreground="{StaticResource TextSecondaryBrush}" />
+                            <TextBlock Text="当前模式" Foreground="#9FB0C7" FontSize="12" />
+                            <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                <Border Background="#263248" CornerRadius="10" Padding="16,8">
+                                    <TextBlock Text="保守" Foreground="#B5C0D1" />
                                 </Border>
-                                <Border Background="#5669E8" CornerRadius="10" Padding="14,8" Margin="8,0,0,0">
+                                <Border CornerRadius="10" Padding="16,8" Margin="8,0,0,0">
+                                    <Border.Background>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                            <GradientStop Color="#6E83FF" Offset="0" />
+                                            <GradientStop Color="#7B5CFF" Offset="1" />
+                                        </LinearGradientBrush>
+                                    </Border.Background>
                                     <TextBlock Text="平衡" Foreground="White" FontWeight="SemiBold" />
                                 </Border>
-                                <Border Background="#263248" CornerRadius="10" Padding="14,8" Margin="8,0,0,0">
-                                    <TextBlock Text="激进" Foreground="{StaticResource TextSecondaryBrush}" />
+                                <Border Background="#263248" CornerRadius="10" Padding="16,8" Margin="8,0,0,0">
+                                    <TextBlock Text="激进" Foreground="#B5C0D1" />
                                 </Border>
                             </StackPanel>
                         </StackPanel>
 
                         <StackPanel Grid.Column="1">
-                            <TextBlock Text="已识别游戏" Foreground="{StaticResource TextSecondaryBrush}" FontSize="12" />
+                            <TextBlock Text="已识别游戏" Foreground="#9FB0C7" FontSize="12" />
                             <ComboBox x:Name="GameProcessCombo"
-                                      Width="250"
+                                      Width="260"
                                       Height="34"
-                                      Margin="0,8,0,0"
+                                      Margin="0,10,0,0"
                                       DisplayMemberPath="DisplayName"
                                       SelectionChanged="GameProcessCombo_SelectionChanged" />
                         </StackPanel>
 
-                        <StackPanel Grid.Column="2" Orientation="Horizontal">
-                            <Button Width="132"
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                            <Button Width="150"
                                     Height="58"
                                     Background="{StaticResource AccentBrush}"
                                     Foreground="White"
@@ -143,7 +172,7 @@
                                 <TextBlock Text="Boost" />
                             </Button>
                             <Button x:Name="RestoreButton"
-                                    Width="96"
+                                    Width="90"
                                     Height="58"
                                     Margin="10,0,0,0"
                                     Content="恢复"
@@ -153,12 +182,7 @@
                     </Grid>
                 </Border>
 
-                <Grid Grid.Row="2">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="220" />
-                        <RowDefinition Height="*" />
-                        <RowDefinition Height="134" />
-                    </Grid.RowDefinitions>
+                <Grid Grid.Row="2" Margin="0,18,0,0">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
@@ -167,133 +191,174 @@
                     </Grid.ColumnDefinitions>
 
                     <Border Style="{StaticResource MetricCardStyle}" Margin="0,0,14,0">
-                        <StackPanel>
-                            <TextBlock Text="CPU" Foreground="{StaticResource TextPrimaryBrush}" FontSize="17" FontWeight="SemiBold" />
-                            <TextBlock x:Name="CpuText" Text="--%" Foreground="{StaticResource TextPrimaryBrush}" FontSize="32"
-                                       FontWeight="SemiBold" Margin="0,22,0,0" />
-                            <TextBlock x:Name="CpuDetailText" Text="正在检测" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,8,0,0" />
-                            <ProgressBar x:Name="CpuBar" Height="8" Margin="0,28,0,0" Minimum="0" Maximum="100" />
-                        </StackPanel>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <DockPanel>
+                                <TextBlock Text="CPU" Foreground="#FFFFFF" FontSize="17" FontWeight="SemiBold" />
+                                <TextBlock DockPanel.Dock="Right" Text="良好" Foreground="{StaticResource GoodBrush}" FontSize="12" />
+                            </DockPanel>
+                            <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                                <TextBlock x:Name="CpuText" Text="--%" Foreground="#FFFFFF" FontSize="34" FontWeight="SemiBold" />
+                                <TextBlock x:Name="CpuDetailText" Text="正在检测" Foreground="#A9B7CC" Margin="0,8,0,0" />
+                            </StackPanel>
+                            <ProgressBar x:Name="CpuBar" Grid.Row="2" Height="8" Minimum="0" Maximum="100" />
+                        </Grid>
                     </Border>
 
                     <Border Grid.Column="1" Style="{StaticResource MetricCardStyle}" Margin="0,0,14,0">
-                        <StackPanel>
-                            <TextBlock Text="内存" Foreground="{StaticResource TextPrimaryBrush}" FontSize="17" FontWeight="SemiBold" />
-                            <TextBlock x:Name="MemoryText" Text="--%" Foreground="{StaticResource TextPrimaryBrush}" FontSize="32"
-                                       FontWeight="SemiBold" Margin="0,22,0,0" />
-                            <TextBlock x:Name="MemoryDetailText" Text="正在检测" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,8,0,0" />
-                            <ProgressBar x:Name="MemoryBar" Height="8" Margin="0,28,0,0" Minimum="0" Maximum="100" />
-                        </StackPanel>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <DockPanel>
+                                <TextBlock Text="内存" Foreground="#FFFFFF" FontSize="17" FontWeight="SemiBold" />
+                                <TextBlock DockPanel.Dock="Right" Text="可优化" Foreground="{StaticResource WarningBrush}" FontSize="12" />
+                            </DockPanel>
+                            <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                                <TextBlock x:Name="MemoryText" Text="--%" Foreground="#FFFFFF" FontSize="34" FontWeight="SemiBold" />
+                                <TextBlock x:Name="MemoryDetailText" Text="正在检测" Foreground="#A9B7CC" Margin="0,8,0,0" />
+                            </StackPanel>
+                            <ProgressBar x:Name="MemoryBar" Grid.Row="2" Height="8" Minimum="0" Maximum="100" />
+                        </Grid>
                     </Border>
 
                     <Border Grid.Column="2" Style="{StaticResource MetricCardStyle}" Margin="0,0,14,0">
-                        <StackPanel>
-                            <TextBlock Text="网络" Foreground="{StaticResource TextPrimaryBrush}" FontSize="17" FontWeight="SemiBold" />
-                            <TextBlock x:Name="PingText" Text="-- ms" Foreground="{StaticResource GoodBrush}" FontSize="32"
-                                       FontWeight="SemiBold" Margin="0,22,0,0" />
-                            <TextBlock x:Name="NetworkDetailText" Text="Ping / 抖动 / 丢包" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,8,0,0" />
-                            <TextBlock x:Name="DnsText" Text="DNS -- ms" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,28,0,0" />
-                        </StackPanel>
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="网络" Foreground="#FFFFFF" FontSize="17" FontWeight="SemiBold" />
+                            <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                                <TextBlock x:Name="PingText" Text="-- ms" Foreground="{StaticResource GoodBrush}" FontSize="34" FontWeight="SemiBold" />
+                                <TextBlock x:Name="NetworkDetailText" Text="Ping / 抖动 / 丢包" Foreground="#A9B7CC" Margin="0,8,0,0" />
+                                <TextBlock x:Name="DnsText" Text="DNS -- ms" Foreground="#A9B7CC" Margin="0,22,0,0" />
+                            </StackPanel>
+                        </Grid>
                     </Border>
 
                     <Border Grid.Column="3" Style="{StaticResource MetricCardStyle}">
-                        <StackPanel>
-                            <TextBlock Text="状态" Foreground="{StaticResource TextPrimaryBrush}" FontSize="17" FontWeight="SemiBold" />
-                            <TextBlock x:Name="OverallStatusText" Text="检测中" Foreground="{StaticResource GoodBrush}" FontSize="32"
-                                       FontWeight="SemiBold" Margin="0,22,0,0" />
-                            <TextBlock x:Name="FindingCountText" Text="0 个建议" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,8,0,0" />
-                            <TextBlock x:Name="SessionStateText" Text="所有动作先预览，执行前保存快照"
-                                       Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,26,0,0" />
-                        </StackPanel>
-                    </Border>
-
-                    <Grid Grid.Row="1" Grid.ColumnSpan="4" Margin="0,18,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="1.1*" />
-                            <ColumnDefinition Width="0.9*" />
-                        </Grid.ColumnDefinitions>
-
-                        <Border Style="{StaticResource MetricCardStyle}" Margin="0,0,14,0">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="*" />
-                                </Grid.RowDefinitions>
-                                <DockPanel>
-                                    <TextBlock Text="诊断建议" Foreground="{StaticResource TextPrimaryBrush}" FontSize="18" FontWeight="SemiBold" />
-                                    <TextBlock x:Name="RefreshText" DockPanel.Dock="Right" Text="自动刷新"
-                                               Foreground="{StaticResource TextSecondaryBrush}" />
-                                </DockPanel>
-                                <ListBox x:Name="FindingsList" Grid.Row="1" Margin="0,14,0,0"
-                                         Background="Transparent" BorderThickness="0"
-                                         Foreground="{StaticResource TextPrimaryBrush}" />
-                            </Grid>
-                        </Border>
-
-                        <Border Grid.Column="1" Style="{StaticResource MetricCardStyle}">
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="*" />
-                                </Grid.RowDefinitions>
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Boost 预览" Foreground="{StaticResource TextPrimaryBrush}" FontSize="18" FontWeight="SemiBold" />
-                                    <TextBlock Grid.Column="1" Text="优化记录" Foreground="{StaticResource TextPrimaryBrush}" FontSize="18" FontWeight="SemiBold" />
-                                </Grid>
-                                <Grid Grid.Row="1" Margin="0,14,0,0">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="*" />
-                                    </Grid.ColumnDefinitions>
-                                    <ListBox x:Name="PlanList"
-                                             Background="Transparent" BorderThickness="0"
-                                             Foreground="{StaticResource TextPrimaryBrush}" />
-                                    <ListBox x:Name="HistoryList" Grid.Column="1" Margin="12,0,0,0"
-                                             Background="Transparent" BorderThickness="0"
-                                             Foreground="{StaticResource TextPrimaryBrush}" />
-                                </Grid>
-                            </Grid>
-                        </Border>
-                    </Grid>
-
-                    <Border Grid.Row="2" Grid.ColumnSpan="4" Margin="0,18,0,0"
-                            Style="{StaticResource MetricCardStyle}">
                         <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel>
-                                <TextBlock Text="游戏库" Foreground="{StaticResource TextPrimaryBrush}" FontSize="18" FontWeight="SemiBold" />
-                                <TextBlock x:Name="ActiveProfileText"
-                                           Text="Current profile: none"
-                                           Foreground="{StaticResource TextSecondaryBrush}"
-                                           Margin="0,6,0,0" />
-                                <ListBox x:Name="GameLibraryList" Margin="0,12,0,0" Height="58"
-                                         Background="Transparent" BorderThickness="0"
-                                         Foreground="{StaticResource TextPrimaryBrush}"
-                                         DisplayMemberPath="DisplayName"
-                                         SelectionChanged="GameLibraryList_SelectionChanged" />
-                            </StackPanel>
-                            <StackPanel Grid.Column="1" Width="190">
-                                <Button Height="36" Content="保存当前进程"
-                                        Click="SaveSelectedGame_Click" />
-                                <ComboBox x:Name="BackgroundCandidateCombo"
-                                          Height="32"
-                                          Margin="0,8,0,0"
-                                          DisplayMemberPath="DisplayName" />
-                                <Button Height="34" Margin="0,8,0,0" Content="允许暂停候选"
-                                        Click="AllowBackgroundCandidate_Click" />
-                                <Button Height="30" Margin="0,8,0,0" Content="Delete profile"
-                                        Click="DeleteActiveGame_Click" />
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="状态" Foreground="#FFFFFF" FontSize="17" FontWeight="SemiBold" />
+                            <StackPanel Grid.Row="1" VerticalAlignment="Center">
+                                <TextBlock x:Name="OverallStatusText" Text="检测中" Foreground="{StaticResource GoodBrush}" FontSize="32" FontWeight="SemiBold" />
+                                <TextBlock x:Name="FindingCountText" Text="0 个建议" Foreground="#A9B7CC" Margin="0,8,0,0" />
+                                <TextBlock x:Name="SessionStateText"
+                                           Text="所有动作先预览，执行前保存快照"
+                                           Foreground="#A9B7CC"
+                                           TextWrapping="Wrap"
+                                           Margin="0,22,0,0" />
                             </StackPanel>
                         </Grid>
                     </Border>
                 </Grid>
+
+                <Grid Grid.Row="3" Margin="0,18,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.15*" />
+                        <ColumnDefinition Width="0.85*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Style="{StaticResource GlassPanelStyle}" Margin="0,0,14,0" Padding="18">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <DockPanel>
+                                <TextBlock Text="诊断建议" Foreground="#FFFFFF" FontSize="18" FontWeight="SemiBold" />
+                                <TextBlock x:Name="RefreshText" DockPanel.Dock="Right" Text="自动刷新" Foreground="#A9B7CC" />
+                            </DockPanel>
+                            <ListBox x:Name="FindingsList"
+                                     Grid.Row="1"
+                                     Margin="0,14,0,0"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Foreground="#EEF4FF" />
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Column="1" Style="{StaticResource GlassPanelStyle}" Padding="18">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Text="Boost 预览" Foreground="#FFFFFF" FontSize="18" FontWeight="SemiBold" />
+                                <TextBlock Grid.Column="1" Text="优化记录" Foreground="#FFFFFF" FontSize="18" FontWeight="SemiBold" />
+                            </Grid>
+                            <Grid Grid.Row="1" Margin="0,14,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <ListBox x:Name="PlanList"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         Foreground="#EEF4FF" />
+                                <ListBox x:Name="HistoryList"
+                                         Grid.Column="1"
+                                         Margin="12,0,0,0"
+                                         Background="Transparent"
+                                         BorderThickness="0"
+                                         Foreground="#EEF4FF" />
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <Border Grid.Row="4"
+                        Style="{StaticResource GlassPanelStyle}"
+                        Padding="18"
+                        Margin="0,18,0,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="210" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <TextBlock Text="游戏库" Foreground="#FFFFFF" FontSize="18" FontWeight="SemiBold" />
+                            <TextBlock x:Name="ActiveProfileText"
+                                       Text="当前配置：无"
+                                       Foreground="#A9B7CC"
+                                       Margin="0,6,0,0" />
+                            <ListBox x:Name="GameLibraryList"
+                                     Margin="0,10,0,0"
+                                     Height="54"
+                                     Background="Transparent"
+                                     BorderThickness="0"
+                                     Foreground="#EEF4FF"
+                                     DisplayMemberPath="DisplayName"
+                                     SelectionChanged="GameLibraryList_SelectionChanged" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1">
+                            <Button Height="32" Content="保存当前进程" Click="SaveSelectedGame_Click" />
+                            <ComboBox x:Name="BackgroundCandidateCombo"
+                                      Height="30"
+                                      Margin="0,8,0,0"
+                                      DisplayMemberPath="DisplayName" />
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <Button Width="106" Height="30" Content="允许暂停" Click="AllowBackgroundCandidate_Click" />
+                                <Button Width="94" Height="30" Margin="8,0,0,0" Content="删除配置" Click="DeleteActiveGame_Click" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </Border>
             </Grid>
         </Grid>
     </Border>
