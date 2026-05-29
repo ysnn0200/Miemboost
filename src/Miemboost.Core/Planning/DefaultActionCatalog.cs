@@ -1,0 +1,51 @@
+using Miemboost.Core.Models;
+
+namespace Miemboost.Core.Planning;
+
+public static class DefaultActionCatalog
+{
+    public static readonly OptimizationActionDescriptor PowerPlanSwitch = new(
+        Id: "power-plan.switch-high-performance",
+        Title: "Switch power plan",
+        Description: "Temporarily switch Windows to a high performance power plan.",
+        Kind: OptimizationActionKind.PowerPlanSwitch,
+        RiskLevel: RiskLevel.Safe,
+        RequiresElevation: false,
+        CanRestore: true);
+
+    public static readonly OptimizationActionDescriptor GamePriorityHigh = new(
+        Id: "process.game-priority-high",
+        Title: "Prioritize game process",
+        Description: "Set the selected game process priority to High while the game is running.",
+        Kind: OptimizationActionKind.ProcessPriorityChange,
+        RiskLevel: RiskLevel.Balanced,
+        RequiresElevation: false,
+        CanRestore: true);
+
+    public static readonly OptimizationActionDescriptor PauseApprovedBackgroundApps = new(
+        Id: "process.pause-approved-background-apps",
+        Title: "Pause approved background apps",
+        Description: "Pause or close only the background apps allowed by the active game profile.",
+        Kind: OptimizationActionKind.BackgroundAppPause,
+        RiskLevel: RiskLevel.Balanced,
+        RequiresElevation: false,
+        CanRestore: true);
+
+    public static readonly OptimizationActionDescriptor ReleaseStandbyMemory = new(
+        Id: "memory.release-standby",
+        Title: "Release Standby Memory",
+        Description: "Release Windows Standby Memory once before the game session starts.",
+        Kind: OptimizationActionKind.StandbyMemoryRelease,
+        RiskLevel: RiskLevel.Balanced,
+        RequiresElevation: true,
+        CanRestore: false);
+
+    public static readonly OptimizationActionDescriptor NetworkDiagnostics = new(
+        Id: "network.diagnostics",
+        Title: "Run network diagnostics",
+        Description: "Measure ping, jitter, packet loss, DNS response, and background network usage.",
+        Kind: OptimizationActionKind.NetworkDiagnostics,
+        RiskLevel: RiskLevel.Safe,
+        RequiresElevation: false,
+        CanRestore: true);
+}
