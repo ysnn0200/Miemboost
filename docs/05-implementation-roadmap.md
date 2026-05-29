@@ -17,13 +17,15 @@ No Windows system changes are executed in this phase.
 
 ## Phase 2: Windows Read-only Diagnostics
 
+Status: in progress.
+
 Deliverables:
 
-- Process list reader.
-- CPU and memory summary.
-- Network adapter summary.
-- Ping, jitter, and packet loss probe.
-- DNS response probe.
+- Process list reader. Started.
+- CPU and memory summary. Started.
+- Network adapter summary. Started.
+- Ping, jitter, and packet loss probe. Started.
+- DNS response probe. Started.
 
 Rules:
 
@@ -94,4 +96,3 @@ Rules:
 - No silent elevation.
 - No hidden background persistence.
 - Clear uninstall and restore behavior.
-
