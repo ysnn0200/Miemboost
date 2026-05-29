@@ -33,3 +33,17 @@ For a larger self-contained build:
 ## Current Packaging Status
 
 This is a portable publish folder, not an installer yet. Code signing and installer creation are later release steps.
+
+## Zip Package
+
+Run:
+
+```powershell
+.\scripts\package-windows.ps1
+```
+
+The zip package is written to:
+
+```text
+artifacts\packages\Miemboost-win-x64.zip
+```
