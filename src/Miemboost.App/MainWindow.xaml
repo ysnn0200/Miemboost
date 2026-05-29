@@ -282,12 +282,13 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
                                 <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <DockPanel>
                                 <TextBlock Text="GPU" Foreground="#FFFFFF" FontSize="17" FontWeight="SemiBold" />
                                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                                    <Ellipse Width="7" Height="7" Fill="#64748B" Margin="0,0,6,0" />
-                                    <TextBlock Text="待接入" Foreground="#A9B7CC" FontSize="12" />
+                                    <Ellipse x:Name="GpuStatusDot" Width="7" Height="7" Fill="#64748B" Margin="0,0,6,0" />
+                                    <TextBlock x:Name="GpuStatusText" Text="检测中" Foreground="#A9B7CC" FontSize="12" />
                                 </StackPanel>
                             </DockPanel>
                             <StackPanel Grid.Row="1" VerticalAlignment="Center">
@@ -305,6 +306,7 @@
                                           StrokeDashArray="4 4"
                                           Opacity="0.85" />
                             </Canvas>
+                            <ProgressBar x:Name="GpuBar" Grid.Row="3" Height="8" Minimum="0" Maximum="100" />
                         </Grid>
                     </Border>
                 </Grid>

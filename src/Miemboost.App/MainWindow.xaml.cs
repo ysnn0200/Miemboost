@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Threading;
 using Miemboost.Core.AppInfo;
 using Forms = System.Windows.Forms;
+using Media = System.Windows.Media;
 using Miemboost.Core.Diagnostics;
 using Miemboost.Core.Execution;
 using Miemboost.Core.Games;
@@ -188,6 +189,11 @@ public partial class MainWindow : Window
         GpuDetailText.Text = report.System.Gpu.IsAvailable
             ? report.System.Gpu.Source
             : "当前系统未提供 GPU 计数器";
+        GpuStatusText.Text = report.System.Gpu.IsAvailable ? "良好" : "不可用";
+        GpuStatusDot.Fill = report.System.Gpu.IsAvailable
+            ? (Media.Brush)FindResource("GoodBrush")
+            : new Media.SolidColorBrush(Media.Color.FromRgb(100, 116, 139));
+        GpuBar.Value = report.System.Gpu.IsAvailable ? report.System.Gpu.UsagePercent : 0;
 
         MemoryText.Text = $"{report.System.Memory.UsedPercent:0}%";
         MemoryDetailText.Text = $"{ToGb(report.System.Memory.UsedBytes):0.0} GB / {ToGb(report.System.Memory.TotalBytes):0.0} GB";
