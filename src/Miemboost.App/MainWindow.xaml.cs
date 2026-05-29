@@ -2,12 +2,14 @@ using System.IO;
 using System.Windows;
 using Miemboost.Core.Diagnostics;
 using Miemboost.Core.Execution;
+using Miemboost.Core.Games;
 using Miemboost.Core.History;
 using Miemboost.Core.Models;
 using Miemboost.Core.Planning;
 using Miemboost.Core.Safety;
 using Miemboost.Windows.Diagnostics;
 using Miemboost.Windows.Execution;
+using Miemboost.Windows.Games;
 using Miemboost.Windows.History;
 using Miemboost.Windows.Power;
 using Miemboost.Windows.Processes;
@@ -19,12 +21,14 @@ public partial class MainWindow : Window
     private readonly IDiagnosticsService _diagnosticsService;
     private readonly JsonSystemSnapshotStore _snapshotStore;
     private readonly JsonOptimizationHistoryStore _historyStore;
+    private readonly JsonGameProfileStore _gameProfileStore;
     private readonly OptimizationExecutor _executor;
     private readonly OptimizationRestorer _restorer;
     private readonly DefaultPlanFactory _planFactory = new();
     private OptimizationPlan? _lastPlan;
     private string? _lastSnapshotId;
     private int? _selectedGameProcessId;
+    private IReadOnlyList<ProcessSnapshot> _latestProcesses = [];
 
     public MainWindow()
     {
@@ -40,6 +44,7 @@ public partial class MainWindow : Window
 
         _snapshotStore = new JsonSystemSnapshotStore(GetSnapshotDirectoryPath());
         _historyStore = new JsonOptimizationHistoryStore(GetHistoryFilePath());
+        _gameProfileStore = new JsonGameProfileStore(GetGameProfilesFilePath());
         _executor = new OptimizationExecutor(
             new SafetyPolicy(),
             new WindowsSystemSnapshotFactory(powerPlanManager, processPriorityManager),
@@ -52,6 +57,7 @@ public partial class MainWindow : Window
 
         Loaded += async (_, _) => await RefreshDiagnosticsAsync();
         Loaded += async (_, _) => await RefreshHistoryAsync();
+        Loaded += async (_, _) => await RefreshGameLibraryAsync();
         ShowBoostPreview();
     }
 
@@ -68,6 +74,7 @@ public partial class MainWindow : Window
                 PingTimeout: TimeSpan.FromMilliseconds(900)));
 
             RenderDiagnostics(report);
+            _latestProcesses = report.System.Processes;
             RenderProcessChoices(report.System.Processes);
         }
         catch (Exception exception)
@@ -187,6 +194,32 @@ public partial class MainWindow : Window
         await RestoreAsync();
     }
 
+    private async void SaveSelectedGame_Click(object sender, RoutedEventArgs e)
+    {
+        await SaveSelectedGameAsync();
+    }
+
+    private async Task SaveSelectedGameAsync()
+    {
+        if (_selectedGameProcessId is null)
+        {
+            GameLibraryList.Items.Add("请先选择一个游戏进程。");
+            return;
+        }
+
+        var process = _latestProcesses.FirstOrDefault(process => process.ProcessId == _selectedGameProcessId.Value);
+        if (process is null)
+        {
+            GameLibraryList.Items.Add("当前选择的进程已不存在。");
+            return;
+        }
+
+        var executablePath = process.MainModulePath ?? process.Name;
+        var profile = GameProfileFactory.Create(process.Name, executablePath);
+        await _gameProfileStore.SaveAsync(profile);
+        await RefreshGameLibraryAsync();
+    }
+
     private async Task RestoreAsync()
     {
         if (_lastPlan is null || string.IsNullOrWhiteSpace(_lastSnapshotId))
@@ -233,6 +266,23 @@ public partial class MainWindow : Window
             HistoryList.Items.Add(
                 $"{ToChineseHistoryEvent(entry.EventType)}  {ToChineseExecutionStatus(entry.Status)}  " +
                 $"{entry.CreatedAt.LocalDateTime:HH:mm:ss}  成功 {entry.SucceededCount} / 跳过 {entry.SkippedCount} / 失败 {entry.FailedCount}");
+        }
+    }
+
+    private async Task RefreshGameLibraryAsync()
+    {
+        var profiles = await _gameProfileStore.ListAsync();
+
+        GameLibraryList.Items.Clear();
+        if (profiles.Count == 0)
+        {
+            GameLibraryList.Items.Add("还没有保存的游戏。");
+            return;
+        }
+
+        foreach (var profile in profiles.Take(5))
+        {
+            GameLibraryList.Items.Add($"{profile.Name}  {profile.RecommendedMode}  自动恢复 {(profile.AutoRestoreOnExit ? "开" : "关")}");
         }
     }
 
@@ -320,6 +370,14 @@ public partial class MainWindow : Window
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Miemboost",
             "history.json");
+    }
+
+    private static string GetGameProfilesFilePath()
+    {
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Miemboost",
+            "games.json");
     }
 
     private sealed record ProcessChoice(int? ProcessId, string DisplayName);

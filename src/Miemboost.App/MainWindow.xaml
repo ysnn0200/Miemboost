@@ -157,6 +157,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="220" />
                         <RowDefinition Height="*" />
+                        <RowDefinition Height="134" />
                     </Grid.RowDefinitions>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -257,6 +258,24 @@
                             </Grid>
                         </Border>
                     </Grid>
+
+                    <Border Grid.Row="2" Grid.ColumnSpan="4" Margin="0,18,0,0"
+                            Style="{StaticResource MetricCardStyle}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="游戏库" Foreground="{StaticResource TextPrimaryBrush}" FontSize="18" FontWeight="SemiBold" />
+                                <ListBox x:Name="GameLibraryList" Margin="0,12,0,0" Height="76"
+                                         Background="Transparent" BorderThickness="0"
+                                         Foreground="{StaticResource TextPrimaryBrush}" />
+                            </StackPanel>
+                            <Button Grid.Column="1" Width="146" Height="42" Content="保存当前进程"
+                                    Click="SaveSelectedGame_Click" />
+                        </Grid>
+                    </Border>
                 </Grid>
             </Grid>
         </Grid>
