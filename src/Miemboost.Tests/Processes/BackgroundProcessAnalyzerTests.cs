@@ -30,10 +30,26 @@ public sealed class BackgroundProcessAnalyzerTests
         Assert.Empty(candidates);
     }
 
+    [Fact]
+    public void FindCandidates_IncludesNetworkActiveProcesses()
+    {
+        var analyzer = new BackgroundProcessAnalyzer();
+
+        var candidates = analyzer.FindCandidates(
+        [
+            CreateProcess("Downloader", 40, isProtected: false, establishedTcpConnections: 8)
+        ]);
+
+        var candidate = Assert.Single(candidates);
+        Assert.Equal("Downloader", candidate.Name);
+        Assert.Equal(8, candidate.EstablishedTcpConnectionCount);
+    }
+
     private static ProcessSnapshot CreateProcess(
         string name,
         long memoryMb,
-        bool isProtected)
+        bool isProtected,
+        int establishedTcpConnections = 0)
     {
         return new ProcessSnapshot(
             ProcessId: Random.Shared.Next(100, 10000),
@@ -41,6 +57,8 @@ public sealed class BackgroundProcessAnalyzerTests
             MainModulePath: null,
             WorkingSetBytes: memoryMb * 1024 * 1024,
             TotalProcessorTime: TimeSpan.Zero,
-            IsProtectedCandidate: isProtected);
+            IsProtectedCandidate: isProtected,
+            TcpConnectionCount: establishedTcpConnections,
+            EstablishedTcpConnectionCount: establishedTcpConnections);
     }
 }

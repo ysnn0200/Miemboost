@@ -234,7 +234,8 @@ public partial class MainWindow : Window
 
         foreach (var candidate in _backgroundProcessAnalyzer.FindCandidates(report.System.Processes).Take(5))
         {
-            FindingsList.Items.Add($"后台候选  {candidate.Name}  {ToMb(candidate.WorkingSetBytes):0} MB，可考虑加入游戏配置的允许暂停列表。");
+            FindingsList.Items.Add(
+                $"后台候选  {candidate.Name}  {ToMb(candidate.WorkingSetBytes):0} MB  TCP {candidate.EstablishedTcpConnectionCount}，可考虑加入游戏配置的允许暂停列表。");
         }
     }
 
@@ -287,7 +288,7 @@ public partial class MainWindow : Window
             .Take(12)
             .Select(candidate => new BackgroundCandidateChoice(
                 candidate.Name,
-                $"{candidate.Name}  {ToMb(candidate.WorkingSetBytes):0} MB"))
+                $"{candidate.Name}  {ToMb(candidate.WorkingSetBytes):0} MB  TCP {candidate.EstablishedTcpConnectionCount}"))
             .ToArray();
 
         BackgroundCandidateCombo.ItemsSource = _backgroundCandidateChoices;

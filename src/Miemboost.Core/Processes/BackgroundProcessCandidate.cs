@@ -5,4 +5,6 @@ public sealed record BackgroundProcessCandidate(
     string Name,
     string? Path,
     long WorkingSetBytes,
-    bool IsProtectedCandidate);
+    bool IsProtectedCandidate,
+    int TcpConnectionCount = 0,
+    int EstablishedTcpConnectionCount = 0);
