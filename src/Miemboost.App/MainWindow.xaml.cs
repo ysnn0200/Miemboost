@@ -1,5 +1,6 @@
 using System.IO;
 using System.Windows;
+using System.Windows.Threading;
 using Miemboost.Core.Diagnostics;
 using Miemboost.Core.Execution;
 using Miemboost.Core.Games;
@@ -25,6 +26,7 @@ public partial class MainWindow : Window
     private readonly JsonGameProfileStore _gameProfileStore;
     private readonly OptimizationExecutor _executor;
     private readonly OptimizationRestorer _restorer;
+    private readonly IProcessLifetimeReader _processLifetimeReader = new WindowsProcessLifetimeReader();
     private readonly DefaultPlanFactory _planFactory = new();
     private readonly BackgroundProcessAnalyzer _backgroundProcessAnalyzer = new();
     private readonly GameProfileMatcher _gameProfileMatcher = new();
@@ -36,6 +38,9 @@ public partial class MainWindow : Window
     private IReadOnlyList<GameProfileChoice> _gameProfileChoices = [];
     private string? _activeGameProfileId;
     private GameProfile? _activeGameProfile;
+    private DispatcherTimer? _autoRestoreTimer;
+    private int? _boostedGameProcessId;
+    private bool _isRestoring;
 
     public MainWindow()
     {
@@ -216,6 +221,7 @@ public partial class MainWindow : Window
         _lastSnapshotId = report.SnapshotId;
         RestoreButton.IsEnabled = true;
         await _historyStore.AddAsync(OptimizationHistoryEntryFactory.FromExecution(report, plan.Mode));
+        StartAutoRestoreMonitor();
 
         PlanList.Items.Clear();
         PlanList.Items.Add($"快照：{report.SnapshotId}");
@@ -225,6 +231,41 @@ public partial class MainWindow : Window
         }
 
         await RefreshHistoryAsync();
+    }
+
+    private void StartAutoRestoreMonitor()
+    {
+        _autoRestoreTimer?.Stop();
+        _boostedGameProcessId = _selectedGameProcessId;
+
+        if (_boostedGameProcessId is null || _activeGameProfile?.AutoRestoreOnExit != true)
+        {
+            return;
+        }
+
+        _autoRestoreTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(5)
+        };
+        _autoRestoreTimer.Tick += async (_, _) => await AutoRestoreTimerTickAsync();
+        _autoRestoreTimer.Start();
+    }
+
+    private async Task AutoRestoreTimerTickAsync()
+    {
+        if (_isRestoring || _boostedGameProcessId is null)
+        {
+            return;
+        }
+
+        if (_processLifetimeReader.IsRunning(_boostedGameProcessId.Value))
+        {
+            return;
+        }
+
+        _autoRestoreTimer?.Stop();
+        PlanList.Items.Add("Detected game exit, restoring snapshot...");
+        await RestoreAsync();
     }
 
     private async void Restore_Click(object sender, RoutedEventArgs e)
@@ -321,15 +362,24 @@ public partial class MainWindow : Window
 
     private async Task RestoreAsync()
     {
+        if (_isRestoring)
+        {
+            return;
+        }
+
         if (_lastPlan is null || string.IsNullOrWhiteSpace(_lastSnapshotId))
         {
             return;
         }
 
+        _isRestoring = true;
+        _autoRestoreTimer?.Stop();
+
         var snapshot = await _snapshotStore.GetAsync(_lastSnapshotId);
         if (snapshot is null)
         {
             PlanList.Items.Add("未找到可恢复快照。");
+            _isRestoring = false;
             return;
         }
 
@@ -338,6 +388,7 @@ public partial class MainWindow : Window
 
         var report = await _restorer.RestoreAsync(_lastPlan, snapshot);
         RestoreButton.IsEnabled = false;
+        _boostedGameProcessId = null;
         await _historyStore.AddAsync(OptimizationHistoryEntryFactory.FromRestore(report, _lastPlan.Mode));
 
         PlanList.Items.Clear();
@@ -347,6 +398,7 @@ public partial class MainWindow : Window
         }
 
         await RefreshHistoryAsync();
+        _isRestoring = false;
     }
 
     private async Task RefreshHistoryAsync()
