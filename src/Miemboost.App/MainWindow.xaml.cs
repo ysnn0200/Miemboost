@@ -1,20 +1,46 @@
+using System.IO;
 using System.Windows;
 using Miemboost.Core.Diagnostics;
+using Miemboost.Core.Execution;
 using Miemboost.Core.Models;
 using Miemboost.Core.Planning;
+using Miemboost.Core.Safety;
 using Miemboost.Windows.Diagnostics;
+using Miemboost.Windows.Execution;
+using Miemboost.Windows.Power;
+using Miemboost.Windows.Processes;
 
 namespace Miemboost.App;
 
 public partial class MainWindow : Window
 {
     private readonly IDiagnosticsService _diagnosticsService;
+    private readonly JsonSystemSnapshotStore _snapshotStore;
+    private readonly OptimizationExecutor _executor;
+    private readonly OptimizationRestorer _restorer;
     private readonly DefaultPlanFactory _planFactory = new();
+    private OptimizationPlan? _lastPlan;
+    private string? _lastSnapshotId;
 
     public MainWindow()
     {
         InitializeComponent();
 
+        var powerPlanManager = new WindowsPowerPlanManager();
+        var processPriorityManager = new WindowsProcessPriorityManager();
+        var handlerRegistry = new OptimizationActionHandlerRegistry(
+        [
+            new PowerPlanSwitchActionHandler(powerPlanManager),
+            new ProcessPriorityActionHandler(processPriorityManager)
+        ]);
+
+        _snapshotStore = new JsonSystemSnapshotStore(GetSnapshotDirectoryPath());
+        _executor = new OptimizationExecutor(
+            new SafetyPolicy(),
+            new WindowsSystemSnapshotFactory(powerPlanManager, processPriorityManager),
+            _snapshotStore,
+            handlerRegistry);
+        _restorer = new OptimizationRestorer(handlerRegistry);
         _diagnosticsService = new DiagnosticsService(
             new WindowsSystemDiagnosticsReader(),
             new WindowsNetworkDiagnosticsReader());
@@ -79,19 +105,72 @@ public partial class MainWindow : Window
         }
     }
 
-    private void BoostPreview_Click(object sender, RoutedEventArgs e)
+    private async void Boost_Click(object sender, RoutedEventArgs e)
     {
-        ShowBoostPreview();
+        await ExecuteBoostAsync();
     }
 
     private void ShowBoostPreview()
     {
         var plan = _planFactory.Create(BoostMode.Balanced);
+        _lastPlan = plan;
 
         PlanList.Items.Clear();
         foreach (var action in plan.Actions)
         {
             PlanList.Items.Add($"{ToChineseRisk(action.RiskLevel)}  {action.Title} - {(action.CanRestore ? "可恢复" : "不可恢复")}");
+        }
+    }
+
+    private async Task ExecuteBoostAsync()
+    {
+        var plan = _lastPlan ?? _planFactory.Create(BoostMode.Balanced);
+        _lastPlan = plan;
+
+        PlanList.Items.Clear();
+        PlanList.Items.Add("正在保存快照并执行安全动作...");
+
+        var report = await _executor.ExecuteAsync(plan);
+        _lastSnapshotId = report.SnapshotId;
+        RestoreButton.IsEnabled = true;
+
+        PlanList.Items.Clear();
+        PlanList.Items.Add($"快照：{report.SnapshotId}");
+        foreach (var result in report.Results)
+        {
+            PlanList.Items.Add($"{ToChineseExecutionStatus(result.Status)}  {result.ActionId} - {result.Message}");
+        }
+    }
+
+    private async void Restore_Click(object sender, RoutedEventArgs e)
+    {
+        await RestoreAsync();
+    }
+
+    private async Task RestoreAsync()
+    {
+        if (_lastPlan is null || string.IsNullOrWhiteSpace(_lastSnapshotId))
+        {
+            return;
+        }
+
+        var snapshot = await _snapshotStore.GetAsync(_lastSnapshotId);
+        if (snapshot is null)
+        {
+            PlanList.Items.Add("未找到可恢复快照。");
+            return;
+        }
+
+        PlanList.Items.Clear();
+        PlanList.Items.Add("正在按快照恢复...");
+
+        var report = await _restorer.RestoreAsync(_lastPlan, snapshot);
+        RestoreButton.IsEnabled = false;
+
+        PlanList.Items.Clear();
+        foreach (var result in report.Results)
+        {
+            PlanList.Items.Add($"{ToChineseExecutionStatus(result.Status)}  {result.ActionId} - {result.Message}");
         }
     }
 
@@ -137,5 +216,24 @@ public partial class MainWindow : Window
             RiskLevel.Forbidden => "禁止",
             _ => "未知"
         };
+    }
+
+    private static string ToChineseExecutionStatus(OptimizationExecutionStatus status)
+    {
+        return status switch
+        {
+            OptimizationExecutionStatus.Succeeded => "完成",
+            OptimizationExecutionStatus.Skipped => "跳过",
+            OptimizationExecutionStatus.Failed => "失败",
+            _ => "未知"
+        };
+    }
+
+    private static string GetSnapshotDirectoryPath()
+    {
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Miemboost",
+            "Snapshots");
     }
 }

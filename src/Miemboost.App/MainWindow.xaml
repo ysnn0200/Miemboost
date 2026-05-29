@@ -127,17 +127,25 @@
                                        FontSize="18" FontWeight="SemiBold" Margin="0,8,0,0" />
                         </StackPanel>
 
-                        <Button Grid.Column="2"
-                                Width="164"
-                                Height="58"
-                                Background="{StaticResource AccentBrush}"
-                                Foreground="White"
-                                FontSize="18"
-                                FontWeight="SemiBold"
-                                BorderBrush="{StaticResource AccentBrushStrong}"
-                                Click="BoostPreview_Click">
-                            <TextBlock Text="Boost" />
-                        </Button>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal">
+                            <Button Width="132"
+                                    Height="58"
+                                    Background="{StaticResource AccentBrush}"
+                                    Foreground="White"
+                                    FontSize="18"
+                                    FontWeight="SemiBold"
+                                    BorderBrush="{StaticResource AccentBrushStrong}"
+                                    Click="Boost_Click">
+                                <TextBlock Text="Boost" />
+                            </Button>
+                            <Button x:Name="RestoreButton"
+                                    Width="96"
+                                    Height="58"
+                                    Margin="10,0,0,0"
+                                    Content="恢复"
+                                    IsEnabled="False"
+                                    Click="Restore_Click" />
+                        </StackPanel>
                     </Grid>
                 </Border>
 
