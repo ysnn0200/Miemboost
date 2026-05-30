@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using System.Globalization;
+using System.Management;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
+using Microsoft.Win32;
 using Miemboost.Core.Diagnostics;
 
 namespace Miemboost.Windows.Diagnostics;
@@ -41,7 +43,76 @@ public sealed class WindowsSystemDiagnosticsReader(
             ? 0
             : Math.Clamp((second - first) / (elapsedMs * processorCount) * 100d, 0, 100);
 
-        return new CpuSnapshot(usage, processorCount, DateTimeOffset.UtcNow);
+        var maxClock = TryReadCpuMaxClockMHz();
+        return new CpuSnapshot(
+            UsagePercent: usage,
+            LogicalProcessorCount: processorCount,
+            CapturedAt: DateTimeOffset.UtcNow,
+            TemperatureCelsius: TryReadCpuTemperatureCelsius(),
+            CurrentClockMHz: TryReadCpuCurrentClockMHz(maxClock),
+            MaxClockMHz: maxClock);
+    }
+
+    private static double? TryReadCpuMaxClockMHz()
+    {
+        try
+        {
+            var value = Registry.GetValue(
+                @"HKEY_LOCAL_MACHINE\HARDWARE\DESCRIPTION\System\CentralProcessor\0",
+                "~MHz",
+                null);
+
+            return value is int mhz && mhz > 0 ? mhz : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static double? TryReadCpuCurrentClockMHz(double? maxClockMHz)
+    {
+        try
+        {
+            using var counter = new PerformanceCounter("Processor Information", "% Processor Performance", "_Total", readOnly: true);
+            _ = counter.NextValue();
+            Thread.Sleep(60);
+            var performancePercent = counter.NextValue();
+            return maxClockMHz is > 0
+                ? Math.Max(0, maxClockMHz.Value * performancePercent / 100d)
+                : null;
+        }
+        catch
+        {
+            return maxClockMHz;
+        }
+    }
+
+    private static double? TryReadCpuTemperatureCelsius()
+    {
+        try
+        {
+            using var searcher = new ManagementObjectSearcher(
+                @"root\WMI",
+                "SELECT CurrentTemperature FROM MSAcpi_ThermalZoneTemperature");
+            foreach (var item in searcher.Get().Cast<ManagementObject>())
+            {
+                if (item["CurrentTemperature"] is uint rawTemperature)
+                {
+                    var celsius = rawTemperature / 10d - 273.15d;
+                    if (celsius is > 0 and < 130)
+                    {
+                        return celsius;
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Many desktop systems do not expose CPU temperature through ACPI/WMI.
+        }
+
+        return null;
     }
 
     private static async Task<GpuSnapshot> CaptureGpuAsync(CancellationToken cancellationToken)

@@ -199,7 +199,8 @@
                                 <TextBlock x:Name="CpuDetailText" Text="正在检测" Foreground="#A9B7CC" Margin="0,8,0,0" />
                             </StackPanel>
                             <Canvas Grid.Row="2" Height="34" Margin="0,0,0,10">
-                                <Polyline Points="0,21 10,13 20,18 32,10 46,17 58,15 70,22 82,18 94,25 106,16 120,20 134,13 148,18"
+                                <Polyline x:Name="CpuSparkline"
+                                          Points="0,21 10,13 20,18 32,10 46,17 58,15 70,22 82,18 94,25 106,16 120,20 134,13 148,18"
                                           Stroke="{StaticResource GoodBrush}"
                                           StrokeThickness="1.6"
                                           Opacity="0.9" />
@@ -228,7 +229,8 @@
                                 <TextBlock x:Name="MemoryDetailText" Text="正在检测" Foreground="#A9B7CC" Margin="0,8,0,0" />
                             </StackPanel>
                             <Canvas Grid.Row="2" Height="34" Margin="0,0,0,10">
-                                <Polyline Points="0,24 12,23 24,20 36,18 48,21 60,17 72,14 84,16 96,12 108,11 120,9 134,13 148,10"
+                                <Polyline x:Name="MemorySparkline"
+                                          Points="0,24 12,23 24,20 36,18 48,21 60,17 72,14 84,16 96,12 108,11 120,9 134,13 148,10"
                                           Stroke="{StaticResource WarningBrush}"
                                           StrokeThickness="1.8"
                                           Opacity="0.9" />
@@ -257,7 +259,8 @@
                                 <TextBlock x:Name="DnsText" Text="DNS -- ms" Foreground="#A9B7CC" Margin="0,14,0,0" />
                             </StackPanel>
                             <Canvas Grid.Row="2" Height="34">
-                                <Polyline Points="0,20 11,17 22,21 33,16 44,19 55,18 66,23 77,20 88,21 99,17 110,18 121,15 132,19 148,16"
+                                <Polyline x:Name="NetworkSparkline"
+                                          Points="0,20 11,17 22,21 33,16 44,19 55,18 66,23 77,20 88,21 99,17 110,18 121,15 132,19 148,16"
                                           Stroke="{StaticResource GoodBrush}"
                                           StrokeThickness="1.6"
                                           Opacity="0.9" />
@@ -289,10 +292,10 @@
                                            Margin="0,8,0,0" />
                             </StackPanel>
                             <Canvas Grid.Row="2" Height="34">
-                                <Polyline Points="0,18 12,18 24,18 36,18 48,18 60,18 72,18 84,18 96,18 108,18 120,18 132,18 148,18"
+                                <Polyline x:Name="GpuSparkline"
+                                          Points="0,18 12,18 24,18 36,18 48,18 60,18 72,18 84,18 96,18 108,18 120,18 132,18 148,18"
                                           Stroke="#64748B"
                                           StrokeThickness="1.5"
-                                          StrokeDashArray="4 4"
                                           Opacity="0.85" />
                             </Canvas>
                             <ProgressBar x:Name="GpuBar" Grid.Row="3" Height="8" Minimum="0" Maximum="100" />

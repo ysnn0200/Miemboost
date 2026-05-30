@@ -1,6 +1,7 @@
 using System.IO;
 using System.Reflection;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Threading;
 using Miemboost.Core.AppInfo;
 using Forms = System.Windows.Forms;
@@ -39,6 +40,10 @@ public partial class MainWindow : Window
     private readonly DefaultPlanFactory _planFactory = new();
     private readonly BackgroundProcessAnalyzer _backgroundProcessAnalyzer = new();
     private readonly GameProfileMatcher _gameProfileMatcher = new();
+    private readonly Queue<double> _cpuSamples = new();
+    private readonly Queue<double> _memorySamples = new();
+    private readonly Queue<double> _networkSamples = new();
+    private readonly Queue<double> _gpuSamples = new();
     private OptimizationPlan? _lastPlan;
     private string? _lastSnapshotId;
     private int? _selectedGameProcessId;
@@ -48,10 +53,12 @@ public partial class MainWindow : Window
     private string? _activeGameProfileId;
     private GameProfile? _activeGameProfile;
     private BoostMode _selectedBoostMode = BoostMode.Balanced;
+    private DispatcherTimer? _diagnosticsTimer;
     private DispatcherTimer? _autoRestoreTimer;
     private int? _boostedGameProcessId;
     private bool _isBoosting;
     private bool _isRestoring;
+    private bool _isRefreshingDiagnostics;
     private Forms.NotifyIcon? _notifyIcon;
     private bool _isExitRequested;
 
@@ -95,7 +102,11 @@ public partial class MainWindow : Window
         _restorer = new OptimizationRestorer(handlerRegistry);
         _preflightService = new OptimizationPreflightService(new SafetyPolicy(), privilegeChecker);
 
-        Loaded += async (_, _) => await RefreshDiagnosticsAsync();
+        Loaded += async (_, _) =>
+        {
+            await RefreshDiagnosticsAsync();
+            StartDiagnosticsTimer();
+        };
         Loaded += async (_, _) => await RefreshHistoryAsync();
         Loaded += async (_, _) => await RefreshGameLibraryAsync();
         StateChanged += MainWindow_StateChanged;
@@ -103,6 +114,17 @@ public partial class MainWindow : Window
         Closed += MainWindow_Closed;
         InitializeTrayIcon();
         ShowBoostPreview();
+    }
+
+    private void StartDiagnosticsTimer()
+    {
+        _diagnosticsTimer?.Stop();
+        _diagnosticsTimer = new DispatcherTimer
+        {
+            Interval = TimeSpan.FromSeconds(2)
+        };
+        _diagnosticsTimer.Tick += async (_, _) => await RefreshDiagnosticsAsync();
+        _diagnosticsTimer.Start();
     }
 
     private void InitializeTrayIcon()
@@ -155,6 +177,7 @@ public partial class MainWindow : Window
 
     private void MainWindow_Closed(object? sender, EventArgs e)
     {
+        _diagnosticsTimer?.Stop();
         _autoRestoreTimer?.Stop();
         _notifyIcon?.Dispose();
     }
@@ -174,6 +197,12 @@ public partial class MainWindow : Window
 
     private async Task RefreshDiagnosticsAsync()
     {
+        if (_isRefreshingDiagnostics)
+        {
+            return;
+        }
+
+        _isRefreshingDiagnostics = true;
         try
         {
             RefreshText.Text = "检测中";
@@ -196,12 +225,16 @@ public partial class MainWindow : Window
             FindingCountText.Text = exception.Message;
             RefreshText.Text = "检测失败";
         }
+        finally
+        {
+            _isRefreshingDiagnostics = false;
+        }
     }
 
     private void RenderDiagnostics(DiagnosticsReport report)
     {
         CpuText.Text = $"{report.System.Cpu.UsagePercent:0}%";
-        CpuDetailText.Text = $"{report.System.Cpu.LogicalProcessorCount} 逻辑处理器";
+        CpuDetailText.Text = FormatCpuDetails(report.System.Cpu);
         CpuBar.Value = report.System.Cpu.UsagePercent;
 
         GpuText.Text = report.System.Gpu.IsAvailable ? $"{report.System.Gpu.UsagePercent:0}%" : "--%";
@@ -218,11 +251,19 @@ public partial class MainWindow : Window
         MemoryDetailText.Text = $"{ToGb(report.System.Memory.UsedBytes):0.0} GB / {ToGb(report.System.Memory.TotalBytes):0.0} GB";
         MemoryBar.Value = report.System.Memory.UsedPercent;
 
+        var networkReceiveBytesPerSecond = report.System.Processes.Sum(process => process.NetworkReceiveBytesPerSecond);
+        var networkSendBytesPerSecond = report.System.Processes.Sum(process => process.NetworkSendBytesPerSecond);
         PingText.Text = report.Ping is null ? "-- ms" : $"{report.Ping.AverageLatencyMs:0} ms";
+        var throughputText = $"↓{ToMb(networkReceiveBytesPerSecond):0.0} MB/s ↑{ToMb(networkSendBytesPerSecond):0.0} MB/s";
         NetworkDetailText.Text = report.Ping is null
-            ? "未检测网络"
-            : $"抖动 {report.Ping.JitterMs:0} ms  丢包 {report.Ping.PacketLossPercent:0.#}%";
+            ? $"未检测网络  {throughputText}"
+            : $"抖动 {report.Ping.JitterMs:0} ms  丢包 {report.Ping.PacketLossPercent:0.#}%  {throughputText}";
         DnsText.Text = report.Dns is null ? "DNS -- ms" : $"DNS {report.Dns.ElapsedMilliseconds} ms";
+        RenderRealtimeSpectrums(
+            cpuPercent: report.System.Cpu.UsagePercent,
+            memoryPercent: report.System.Memory.UsedPercent,
+            networkBytesPerSecond: networkReceiveBytesPerSecond + networkSendBytesPerSecond,
+            gpuPercent: report.System.Gpu.IsAvailable ? report.System.Gpu.UsagePercent : 0);
 
         OverallStatusText.Text = ToChineseStatus(report.Summary.OverallSeverity);
         FindingCountText.Text = $"{report.Summary.Findings.Count} 个建议";
@@ -246,6 +287,56 @@ public partial class MainWindow : Window
             FindingsList.Items.Add(
                 $"后台候选  {candidate.Name}  {ToMb(candidate.WorkingSetBytes):0} MB  TCP {candidate.EstablishedTcpConnectionCount}  ↓{ToMb(candidate.NetworkReceiveBytesPerSecond):0.0}/s ↑{ToMb(candidate.NetworkSendBytesPerSecond):0.0}/s，可考虑加入游戏配置。");
         }
+    }
+
+    private void RenderRealtimeSpectrums(
+        double cpuPercent,
+        double memoryPercent,
+        double networkBytesPerSecond,
+        double gpuPercent)
+    {
+        AddSample(_cpuSamples, cpuPercent);
+        AddSample(_memorySamples, memoryPercent);
+        AddSample(_networkSamples, Math.Clamp(networkBytesPerSecond / (5d * 1024d * 1024d) * 100d, 0, 100));
+        AddSample(_gpuSamples, gpuPercent);
+
+        RenderSparkline(CpuSparkline, _cpuSamples);
+        RenderSparkline(MemorySparkline, _memorySamples);
+        RenderSparkline(NetworkSparkline, _networkSamples);
+        RenderSparkline(GpuSparkline, _gpuSamples);
+    }
+
+    private static void AddSample(Queue<double> samples, double value)
+    {
+        const int MaxSamples = 24;
+        samples.Enqueue(Math.Clamp(value, 0, 100));
+        while (samples.Count > MaxSamples)
+        {
+            samples.Dequeue();
+        }
+    }
+
+    private static void RenderSparkline(System.Windows.Shapes.Polyline sparkline, IReadOnlyCollection<double> samples)
+    {
+        const double width = 148;
+        const double height = 30;
+
+        if (samples.Count == 0)
+        {
+            return;
+        }
+
+        var points = new PointCollection();
+        var index = 0;
+        var step = samples.Count <= 1 ? width : width / (samples.Count - 1);
+
+        foreach (var sample in samples)
+        {
+            points.Add(new System.Windows.Point(index * step, height - sample / 100d * height + 2));
+            index++;
+        }
+
+        sparkline.Points = points;
     }
 
     private async void Boost_Click(object sender, RoutedEventArgs e)
@@ -777,6 +868,24 @@ public partial class MainWindow : Window
         {
             details.Add($"显存频率 {gpu.MemoryClockMHz:0} MHz");
         }
+
+        return string.Join("  ", details);
+    }
+
+    private static string FormatCpuDetails(CpuSnapshot cpu)
+    {
+        var details = new List<string> { $"{cpu.LogicalProcessorCount} 逻辑处理器" };
+
+        if (cpu.CurrentClockMHz is not null)
+        {
+            details.Add(cpu.MaxClockMHz is null
+                ? $"频率 {cpu.CurrentClockMHz:0} MHz"
+                : $"频率 {cpu.CurrentClockMHz:0} / {cpu.MaxClockMHz:0} MHz");
+        }
+
+        details.Add(cpu.TemperatureCelsius is null
+            ? "温度不可用"
+            : $"温度 {cpu.TemperatureCelsius:0}°C");
 
         return string.Join("  ", details);
     }
