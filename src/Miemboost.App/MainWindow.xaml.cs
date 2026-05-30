@@ -46,6 +46,7 @@ public partial class MainWindow : Window
     private IReadOnlyList<GameProfileChoice> _gameProfileChoices = [];
     private string? _activeGameProfileId;
     private GameProfile? _activeGameProfile;
+    private BoostMode _selectedBoostMode = BoostMode.Balanced;
     private DispatcherTimer? _autoRestoreTimer;
     private int? _boostedGameProcessId;
     private bool _isBoosting;
@@ -58,6 +59,7 @@ public partial class MainWindow : Window
         InitializeComponent();
         var versionInfo = AppVersionReader.Read(Assembly.GetExecutingAssembly());
         VersionText.Text = $"{versionInfo.ProductName} {versionInfo.InformationalVersion}";
+        UpdateBoostModeButtons();
 
         var commandRunner = new ProcessWindowsCommandRunner();
         var powerPlanManager = new WindowsPowerPlanManager(commandRunner);
@@ -248,10 +250,56 @@ public partial class MainWindow : Window
         await ExecuteBoostAsync();
     }
 
+    private void ConservativeMode_Click(object sender, RoutedEventArgs e)
+    {
+        SetBoostMode(BoostMode.Conservative);
+    }
+
+    private void BalancedMode_Click(object sender, RoutedEventArgs e)
+    {
+        SetBoostMode(BoostMode.Balanced);
+    }
+
+    private void AggressiveMode_Click(object sender, RoutedEventArgs e)
+    {
+        SetBoostMode(BoostMode.Aggressive);
+    }
+
+    private void SetBoostMode(BoostMode mode)
+    {
+        if (_selectedBoostMode == mode)
+        {
+            return;
+        }
+
+        _selectedBoostMode = mode;
+        UpdateBoostModeButtons();
+        ShowBoostPreview();
+    }
+
+    private void UpdateBoostModeButtons()
+    {
+        UpdateModeButton(ConservativeModeButton, BoostMode.Conservative);
+        UpdateModeButton(BalancedModeButton, BoostMode.Balanced);
+        UpdateModeButton(AggressiveModeButton, BoostMode.Aggressive);
+    }
+
+    private void UpdateModeButton(System.Windows.Controls.Button button, BoostMode mode)
+    {
+        var isSelected = _selectedBoostMode == mode;
+        button.Background = isSelected
+            ? (Media.Brush)FindResource("AccentBrush")
+            : new Media.SolidColorBrush(Media.Color.FromRgb(38, 50, 72));
+        button.Foreground = isSelected
+            ? Media.Brushes.White
+            : new Media.SolidColorBrush(Media.Color.FromRgb(181, 192, 209));
+        button.FontWeight = isSelected ? FontWeights.SemiBold : FontWeights.Normal;
+    }
+
     private void ShowBoostPreview()
     {
         var plan = _planFactory.Create(
-            BoostMode.Balanced,
+            _selectedBoostMode,
             gameProfileId: _activeGameProfileId,
             gameProcessId: _selectedGameProcessId,
             gameProfile: _activeGameProfile,
@@ -324,7 +372,7 @@ public partial class MainWindow : Window
         try
         {
             var plan = _lastPlan ?? _planFactory.Create(
-                BoostMode.Balanced,
+                _selectedBoostMode,
                 gameProfileId: _activeGameProfileId,
                 gameProcessId: _selectedGameProcessId,
                 gameProfile: _activeGameProfile,

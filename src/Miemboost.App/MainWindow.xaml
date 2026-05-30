@@ -132,21 +132,9 @@
                         <StackPanel>
                             <TextBlock Text="当前模式" Foreground="#9FB0C7" FontSize="12" />
                             <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                                <Border Background="#263248" CornerRadius="10" Padding="16,8">
-                                    <TextBlock Text="保守" Foreground="#B5C0D1" />
-                                </Border>
-                                <Border CornerRadius="10" Padding="16,8" Margin="8,0,0,0">
-                                    <Border.Background>
-                                        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                                            <GradientStop Color="#6E83FF" Offset="0" />
-                                            <GradientStop Color="#7B5CFF" Offset="1" />
-                                        </LinearGradientBrush>
-                                    </Border.Background>
-                                    <TextBlock Text="平衡" Foreground="White" FontWeight="SemiBold" />
-                                </Border>
-                                <Border Background="#263248" CornerRadius="10" Padding="16,8" Margin="8,0,0,0">
-                                    <TextBlock Text="激进" Foreground="#B5C0D1" />
-                                </Border>
+                                <Button x:Name="ConservativeModeButton" Content="保守" Click="ConservativeMode_Click" />
+                                <Button x:Name="BalancedModeButton" Content="平衡" Margin="8,0,0,0" Click="BalancedMode_Click" />
+                                <Button x:Name="AggressiveModeButton" Content="激进" Margin="8,0,0,0" Click="AggressiveMode_Click" />
                             </StackPanel>
                         </StackPanel>
 
