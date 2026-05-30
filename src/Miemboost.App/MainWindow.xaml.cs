@@ -11,6 +11,7 @@ using Miemboost.Core.Games;
 using Miemboost.Core.History;
 using Miemboost.Core.Models;
 using Miemboost.Core.Planning;
+using Miemboost.Core.Preflight;
 using Miemboost.Core.Processes;
 using Miemboost.Core.Safety;
 using Miemboost.Windows.Diagnostics;
@@ -32,6 +33,7 @@ public partial class MainWindow : Window
     private readonly JsonGameProfileStore _gameProfileStore;
     private readonly OptimizationExecutor _executor;
     private readonly OptimizationRestorer _restorer;
+    private readonly OptimizationPreflightService _preflightService;
     private readonly IProcessLifetimeReader _processLifetimeReader = new WindowsProcessLifetimeReader();
     private readonly DefaultPlanFactory _planFactory = new();
     private readonly BackgroundProcessAnalyzer _backgroundProcessAnalyzer = new();
@@ -61,6 +63,7 @@ public partial class MainWindow : Window
         var powerPlanManager = new WindowsPowerPlanManager(commandRunner);
         var processPriorityManager = new WindowsProcessPriorityManager();
         var standbyMemoryManager = new WindowsStandbyMemoryManager();
+        var privilegeChecker = new WindowsPrivilegeChecker();
         _diagnosticsService = new DiagnosticsService(
             new WindowsSystemDiagnosticsReader(),
             new WindowsNetworkDiagnosticsReader());
@@ -83,8 +86,9 @@ public partial class MainWindow : Window
             new WindowsSystemSnapshotFactory(powerPlanManager, processPriorityManager),
             _snapshotStore,
             handlerRegistry,
-            new WindowsPrivilegeChecker());
+            privilegeChecker);
         _restorer = new OptimizationRestorer(handlerRegistry);
+        _preflightService = new OptimizationPreflightService(new SafetyPolicy(), privilegeChecker);
 
         Loaded += async (_, _) => await RefreshDiagnosticsAsync();
         Loaded += async (_, _) => await RefreshHistoryAsync();
@@ -255,9 +259,11 @@ public partial class MainWindow : Window
         _lastPlan = plan;
 
         PlanList.Items.Clear();
-        foreach (var action in plan.Actions)
+        var preflight = _preflightService.Evaluate(plan);
+        foreach (var item in preflight.Actions)
         {
-            PlanList.Items.Add($"{ToChineseRisk(action.RiskLevel)}  {action.Title} - {(action.CanRestore ? "可恢复" : "不可恢复")}");
+            PlanList.Items.Add(
+                $"{ToChinesePreflightStatus(item.Status)}  {ToChineseRisk(item.Action.RiskLevel)}  {item.Action.Title} - {item.Message}");
         }
     }
 
@@ -700,6 +706,17 @@ public partial class MainWindow : Window
             OptimizationExecutionStatus.Succeeded => "完成",
             OptimizationExecutionStatus.Skipped => "跳过",
             OptimizationExecutionStatus.Failed => "失败",
+            _ => "未知"
+        };
+    }
+
+    private static string ToChinesePreflightStatus(OptimizationPreflightStatus status)
+    {
+        return status switch
+        {
+            OptimizationPreflightStatus.Ready => "就绪",
+            OptimizationPreflightStatus.BlockedBySafety => "阻止",
+            OptimizationPreflightStatus.RequiresAdministrator => "需管理员",
             _ => "未知"
         };
     }
