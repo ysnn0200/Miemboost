@@ -71,6 +71,24 @@ public sealed class DiagnosticsAnalyzerTests
         Assert.Contains(summary.Findings, finding => finding.Id == "process.high-network-activity");
     }
 
+    [Fact]
+    public void Analyze_FlagsKnownDownloaderNetworkActivity()
+    {
+        var process = new ProcessSnapshot(
+            ProcessId: 21,
+            Name: "Steam",
+            MainModulePath: null,
+            WorkingSetBytes: 100,
+            TotalProcessorTime: TimeSpan.Zero,
+            IsProtectedCandidate: false,
+            TcpConnectionCount: 3,
+            EstablishedTcpConnectionCount: 2);
+
+        var summary = new DiagnosticsAnalyzer().Analyze(CreateSnapshot(processes: [process]));
+
+        Assert.Contains(summary.Findings, finding => finding.Id == "process.update-download-activity");
+    }
+
     private static SystemDiagnosticsSnapshot CreateSnapshot(
         double cpuUsagePercent = 10,
         double memoryUsedPercent = 40,

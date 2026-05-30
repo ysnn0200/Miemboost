@@ -8,6 +8,26 @@ public sealed class DiagnosticsAnalyzer
     private const long NoticeProcessMemoryBytes = 350L * 1024 * 1024;
     private const int HighEstablishedTcpConnections = 12;
     private const int NoticeEstablishedTcpConnections = 6;
+    private const int KnownDownloaderEstablishedTcpConnections = 2;
+
+    private static readonly HashSet<string> KnownDownloaderProcessNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "MoUsoCoreWorker",
+        "TiWorker",
+        "wuauclt",
+        "UsoClient",
+        "MicrosoftEdgeUpdate",
+        "Steam",
+        "steamwebhelper",
+        "EpicGamesLauncher",
+        "EADesktop",
+        "EA Background Service",
+        "OneDrive",
+        "Dropbox",
+        "GoogleDriveFS",
+        "Battle.net",
+        "Agent"
+    };
 
     public DiagnosticsSummary Analyze(
         SystemDiagnosticsSnapshot system,
@@ -97,6 +117,20 @@ public sealed class DiagnosticsAnalyzer
                     Severity: DiagnosticSeverity.Notice,
                     RelatedProcessName: process.Name,
                     RelatedProcessId: process.ProcessId));
+            }
+
+            if (KnownDownloaderProcessNames.Contains(process.Name)
+                && process.EstablishedTcpConnectionCount >= KnownDownloaderEstablishedTcpConnections)
+            {
+                findings.Add(new DiagnosticFinding(
+                    Id: "process.update-download-activity",
+                    Title: "Updater or sync app is active",
+                    Description: $"{process.Name} looks like an updater, launcher, or sync app and currently has {process.EstablishedTcpConnectionCount} established TCP connections. Pause downloads manually before boosting if latency matters.",
+                    Severity: DiagnosticSeverity.Notice,
+                    RelatedProcessName: process.Name,
+                    RelatedProcessId: process.ProcessId));
+
+                continue;
             }
 
             if (process.EstablishedTcpConnectionCount >= HighEstablishedTcpConnections)
