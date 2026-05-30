@@ -5,6 +5,7 @@ public sealed record SystemSnapshot(
     string PlanId,
     string? PreviousPowerPlanId,
     IReadOnlyList<ProcessPrioritySnapshot> ProcessPriorities,
+    IReadOnlyList<ServiceStateSnapshot> ServiceStates,
     IReadOnlyList<PausedProcessSnapshot> PausedProcesses,
     DateTimeOffset CreatedAt);
 
@@ -12,6 +13,10 @@ public sealed record ProcessPrioritySnapshot(
     int ProcessId,
     string ProcessName,
     string PreviousPriorityClass);
+
+public sealed record ServiceStateSnapshot(
+    string ServiceName,
+    string PreviousStatus);
 
 public sealed record PausedProcessSnapshot(
     int ProcessId,

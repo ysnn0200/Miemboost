@@ -58,6 +58,7 @@ public sealed class DnsCacheFlushActionHandlerTests
             PlanId: plan.Id,
             PreviousPowerPlanId: null,
             ProcessPriorities: [],
+            ServiceStates: [],
             PausedProcesses: [],
             CreatedAt: DateTimeOffset.UnixEpoch);
 

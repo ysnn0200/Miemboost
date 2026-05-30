@@ -80,6 +80,7 @@ public sealed class BackgroundAppPauseActionHandlerTests
                 new ProcessPrioritySnapshot(10, "Discord", ManagedProcessPriority.Normal.ToString()),
                 new ProcessPrioritySnapshot(11, "Steam", ManagedProcessPriority.AboveNormal.ToString())
             ],
+            ServiceStates: [],
             PausedProcesses: [],
             CreatedAt: DateTimeOffset.UnixEpoch);
 

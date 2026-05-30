@@ -17,7 +17,8 @@ public sealed class DefaultPlanFactory
             .Add(DefaultActionCatalog.PowerPlanSwitch)
             .Add(DefaultActionCatalog.ReleaseStandbyMemory)
             .Add(DefaultActionCatalog.NetworkDiagnostics)
-            .Add(DefaultActionCatalog.FlushDnsCache);
+            .Add(DefaultActionCatalog.FlushDnsCache)
+            .Add(DefaultActionCatalog.PauseWindowsUpdateDownloads);
 
         if (gameProcessId is > 0)
         {

@@ -70,6 +70,7 @@ public sealed class ProcessPriorityActionHandlerTests
                     ProcessName: "game",
                     PreviousPriorityClass: previousPriority.ToString())
             ],
+            ServiceStates: [],
             PausedProcesses: [],
             CreatedAt: DateTimeOffset.UnixEpoch);
 

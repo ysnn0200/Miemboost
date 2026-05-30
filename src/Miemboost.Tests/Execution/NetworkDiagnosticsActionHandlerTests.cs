@@ -45,6 +45,7 @@ public sealed class NetworkDiagnosticsActionHandlerTests
             PlanId: plan.Id,
             PreviousPowerPlanId: null,
             ProcessPriorities: [],
+            ServiceStates: [],
             PausedProcesses: [],
             CreatedAt: DateTimeOffset.UnixEpoch);
 

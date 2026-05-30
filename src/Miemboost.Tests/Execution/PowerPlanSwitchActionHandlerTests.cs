@@ -61,6 +61,7 @@ public sealed class PowerPlanSwitchActionHandlerTests
             PlanId: plan.Id,
             PreviousPowerPlanId: previousPowerPlanId,
             ProcessPriorities: [],
+            ServiceStates: [],
             PausedProcesses: [],
             CreatedAt: DateTimeOffset.UnixEpoch);
 

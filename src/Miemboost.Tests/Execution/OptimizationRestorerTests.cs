@@ -53,6 +53,7 @@ public sealed class OptimizationRestorerTests
             PlanId: "plan",
             PreviousPowerPlanId: "balanced",
             ProcessPriorities: [],
+            ServiceStates: [],
             PausedProcesses: [],
             CreatedAt: DateTimeOffset.UnixEpoch);
     }

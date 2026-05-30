@@ -80,6 +80,26 @@ public sealed class WindowsSystemSnapshotFactoryTests
         Assert.Equal(2, snapshot.ProcessPriorities.Count);
     }
 
+    [Fact]
+    public async Task CreateAsync_CapturesServiceStateForServicePauseAction()
+    {
+        var factory = new WindowsSystemSnapshotFactory(
+            new StubPowerPlanManager(),
+            new StubProcessPriorityManager(),
+            new StubWindowsServiceManager());
+        var plan = new OptimizationPlan(
+            Id: "plan",
+            Mode: BoostMode.Balanced,
+            GameProfileId: null,
+            Actions: [DefaultActionCatalog.PauseWindowsUpdateDownloads],
+            CreatedAt: DateTimeOffset.UnixEpoch);
+
+        var snapshot = await factory.CreateAsync(plan);
+
+        Assert.Equal(3, snapshot.ServiceStates.Count);
+        Assert.Contains(snapshot.ServiceStates, state => state.ServiceName == "wuauserv" && state.PreviousStatus == "RUNNING");
+    }
+
     private sealed class StubPowerPlanManager : IPowerPlanManager
     {
         public int GetActivePlanCallCount { get; private set; }
@@ -118,6 +138,27 @@ public sealed class WindowsSystemSnapshotFactoryTests
             CancellationToken cancellationToken = default)
         {
             return Task.CompletedTask;
+        }
+    }
+
+    private sealed class StubWindowsServiceManager : Miemboost.Core.Services.IWindowsServiceManager
+    {
+        public Task<Miemboost.Core.Services.WindowsServiceSnapshot?> GetStatusAsync(
+            string serviceName,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<Miemboost.Core.Services.WindowsServiceSnapshot?>(
+                new Miemboost.Core.Services.WindowsServiceSnapshot(serviceName, "RUNNING"));
+        }
+
+        public Task<bool> StopAsync(string serviceName, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(true);
+        }
+
+        public Task<bool> StartAsync(string serviceName, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(true);
         }
     }
 }

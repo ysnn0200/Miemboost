@@ -22,6 +22,7 @@ using Miemboost.Windows.Memory;
 using Miemboost.Windows.Power;
 using Miemboost.Windows.Processes;
 using Miemboost.Windows.Security;
+using Miemboost.Windows.Services;
 
 namespace Miemboost.App;
 
@@ -64,6 +65,7 @@ public partial class MainWindow : Window
         var commandRunner = new ProcessWindowsCommandRunner();
         var powerPlanManager = new WindowsPowerPlanManager(commandRunner);
         var processPriorityManager = new WindowsProcessPriorityManager();
+        var serviceManager = new ScWindowsServiceManager(commandRunner);
         var standbyMemoryManager = new WindowsStandbyMemoryManager();
         var privilegeChecker = new WindowsPrivilegeChecker();
         _diagnosticsService = new DiagnosticsService(
@@ -77,7 +79,8 @@ public partial class MainWindow : Window
             new BackgroundAppPauseActionHandler(processPriorityManager),
             new StandbyMemoryReleaseActionHandler(standbyMemoryManager),
             new NetworkDiagnosticsActionHandler(_diagnosticsService),
-            new DnsCacheFlushActionHandler(commandRunner)
+            new DnsCacheFlushActionHandler(commandRunner),
+            new ServicePauseActionHandler(serviceManager)
         ]);
 
         _snapshotStore = new JsonSystemSnapshotStore(GetSnapshotDirectoryPath());
@@ -85,7 +88,7 @@ public partial class MainWindow : Window
         _gameProfileStore = new JsonGameProfileStore(GetGameProfilesFilePath());
         _executor = new OptimizationExecutor(
             new SafetyPolicy(),
-            new WindowsSystemSnapshotFactory(powerPlanManager, processPriorityManager),
+            new WindowsSystemSnapshotFactory(powerPlanManager, processPriorityManager, serviceManager),
             _snapshotStore,
             handlerRegistry,
             privilegeChecker);

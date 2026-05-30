@@ -58,6 +58,7 @@ public sealed class JsonSystemSnapshotStoreTests : IDisposable
                     ProcessName: "game",
                     PreviousPriorityClass: "Normal")
             ],
+            ServiceStates: [],
             PausedProcesses: [],
             CreatedAt: DateTimeOffset.UnixEpoch);
     }

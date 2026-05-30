@@ -1,6 +1,7 @@
 using Miemboost.Core.Diagnostics;
 using Miemboost.Core.Models;
 using Miemboost.Core.Processes;
+using Miemboost.Core.Services;
 
 namespace Miemboost.Core.Planning;
 
@@ -96,4 +97,17 @@ public static class DefaultActionCatalog
         RiskLevel: RiskLevel.Balanced,
         RequiresElevation: false,
         CanRestore: false);
+
+    public static readonly OptimizationActionDescriptor PauseWindowsUpdateDownloads = new(
+        Id: "service.pause-windows-update-downloads",
+        Title: "Pause Windows update downloads",
+        Description: "Temporarily stop Windows Update, BITS, and Delivery Optimization services when they are running.",
+        Kind: OptimizationActionKind.ServicePause,
+        RiskLevel: RiskLevel.Balanced,
+        RequiresElevation: true,
+        CanRestore: true,
+        Parameters: new Dictionary<string, string>
+        {
+            [ServicePauseActionParameters.ServiceNames] = "wuauserv;BITS;DoSvc"
+        });
 }
