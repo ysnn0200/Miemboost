@@ -25,7 +25,9 @@ public sealed class BackgroundProcessAnalyzer
                 WorkingSetBytes: process.WorkingSetBytes,
                 IsProtectedCandidate: process.IsProtectedCandidate,
                 TcpConnectionCount: process.TcpConnectionCount,
-                EstablishedTcpConnectionCount: process.EstablishedTcpConnectionCount))
+                EstablishedTcpConnectionCount: process.EstablishedTcpConnectionCount,
+                NetworkReceiveBytesPerSecond: process.NetworkReceiveBytesPerSecond,
+                NetworkSendBytesPerSecond: process.NetworkSendBytesPerSecond))
             .ToArray();
     }
 
@@ -33,7 +35,8 @@ public sealed class BackgroundProcessAnalyzer
     {
         var memoryScore = process.WorkingSetBytes / (1024d * 1024d);
         var networkScore = process.EstablishedTcpConnectionCount * 60d;
-        return memoryScore + networkScore;
+        var throughputScore = (process.NetworkReceiveBytesPerSecond + process.NetworkSendBytesPerSecond) / (1024d * 1024d) * 120d;
+        return memoryScore + networkScore + throughputScore;
     }
 
     private static bool IsMiemboostProcess(string processName)

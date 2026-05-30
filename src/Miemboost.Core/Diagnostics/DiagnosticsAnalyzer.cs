@@ -9,6 +9,8 @@ public sealed class DiagnosticsAnalyzer
     private const int HighEstablishedTcpConnections = 12;
     private const int NoticeEstablishedTcpConnections = 6;
     private const int KnownDownloaderEstablishedTcpConnections = 2;
+    private const double HighNetworkBytesPerSecond = 5 * 1024 * 1024;
+    private const double NoticeNetworkBytesPerSecond = 1 * 1024 * 1024;
 
     private static readonly HashSet<string> KnownDownloaderProcessNames = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -126,6 +128,33 @@ public sealed class DiagnosticsAnalyzer
                     Id: "process.update-download-activity",
                     Title: "Updater or sync app is active",
                     Description: $"{process.Name} looks like an updater, launcher, or sync app and currently has {process.EstablishedTcpConnectionCount} established TCP connections. Pause downloads manually before boosting if latency matters.",
+                    Severity: DiagnosticSeverity.Notice,
+                    RelatedProcessName: process.Name,
+                    RelatedProcessId: process.ProcessId));
+
+                continue;
+            }
+
+            var networkBytesPerSecond = process.NetworkReceiveBytesPerSecond + process.NetworkSendBytesPerSecond;
+            if (networkBytesPerSecond >= HighNetworkBytesPerSecond)
+            {
+                findings.Add(new DiagnosticFinding(
+                    Id: "process.high-network-throughput",
+                    Title: "High background network throughput",
+                    Description: $"{process.Name} is transferring about {ToMb(networkBytesPerSecond):0.0} MB/s. Pause downloads or sync before competitive play.",
+                    Severity: DiagnosticSeverity.Warning,
+                    RelatedProcessName: process.Name,
+                    RelatedProcessId: process.ProcessId));
+
+                continue;
+            }
+
+            if (networkBytesPerSecond >= NoticeNetworkBytesPerSecond)
+            {
+                findings.Add(new DiagnosticFinding(
+                    Id: "process.notice-network-throughput",
+                    Title: "Noticeable background network throughput",
+                    Description: $"{process.Name} is transferring about {ToMb(networkBytesPerSecond):0.0} MB/s. It may affect latency if bandwidth is limited.",
                     Severity: DiagnosticSeverity.Notice,
                     RelatedProcessName: process.Name,
                     RelatedProcessId: process.ProcessId));
@@ -259,5 +288,10 @@ public sealed class DiagnosticsAnalyzer
     private static DiagnosticSeverity Max(DiagnosticSeverity left, DiagnosticSeverity right)
     {
         return left > right ? left : right;
+    }
+
+    private static double ToMb(double bytes)
+    {
+        return bytes / 1024d / 1024d;
     }
 }

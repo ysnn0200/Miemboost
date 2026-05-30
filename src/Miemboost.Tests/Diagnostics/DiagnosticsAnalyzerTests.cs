@@ -89,6 +89,24 @@ public sealed class DiagnosticsAnalyzerTests
         Assert.Contains(summary.Findings, finding => finding.Id == "process.update-download-activity");
     }
 
+    [Fact]
+    public void Analyze_FlagsHighNetworkThroughput()
+    {
+        var process = new ProcessSnapshot(
+            ProcessId: 22,
+            Name: "Downloader",
+            MainModulePath: null,
+            WorkingSetBytes: 100,
+            TotalProcessorTime: TimeSpan.Zero,
+            IsProtectedCandidate: false,
+            NetworkReceiveBytesPerSecond: 6 * 1024 * 1024,
+            NetworkSendBytesPerSecond: 0);
+
+        var summary = new DiagnosticsAnalyzer().Analyze(CreateSnapshot(processes: [process]));
+
+        Assert.Contains(summary.Findings, finding => finding.Id == "process.high-network-throughput");
+    }
+
     private static SystemDiagnosticsSnapshot CreateSnapshot(
         double cpuUsagePercent = 10,
         double memoryUsedPercent = 40,

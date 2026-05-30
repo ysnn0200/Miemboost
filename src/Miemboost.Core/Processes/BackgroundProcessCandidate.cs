@@ -7,4 +7,6 @@ public sealed record BackgroundProcessCandidate(
     long WorkingSetBytes,
     bool IsProtectedCandidate,
     int TcpConnectionCount = 0,
-    int EstablishedTcpConnectionCount = 0);
+    int EstablishedTcpConnectionCount = 0,
+    double NetworkReceiveBytesPerSecond = 0,
+    double NetworkSendBytesPerSecond = 0);

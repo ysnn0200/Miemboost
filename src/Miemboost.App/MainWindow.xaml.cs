@@ -244,7 +244,7 @@ public partial class MainWindow : Window
         foreach (var candidate in _backgroundProcessAnalyzer.FindCandidates(report.System.Processes).Take(5))
         {
             FindingsList.Items.Add(
-                $"后台候选  {candidate.Name}  {ToMb(candidate.WorkingSetBytes):0} MB  TCP {candidate.EstablishedTcpConnectionCount}，可考虑加入游戏配置的允许暂停列表。");
+                $"后台候选  {candidate.Name}  {ToMb(candidate.WorkingSetBytes):0} MB  TCP {candidate.EstablishedTcpConnectionCount}  ↓{ToMb(candidate.NetworkReceiveBytesPerSecond):0.0}/s ↑{ToMb(candidate.NetworkSendBytesPerSecond):0.0}/s，可考虑加入游戏配置。");
         }
     }
 
@@ -345,7 +345,7 @@ public partial class MainWindow : Window
             .Take(12)
             .Select(candidate => new BackgroundCandidateChoice(
                 candidate.Name,
-                $"{candidate.Name}  {ToMb(candidate.WorkingSetBytes):0} MB  TCP {candidate.EstablishedTcpConnectionCount}"))
+                $"{candidate.Name}  {ToMb(candidate.WorkingSetBytes):0} MB  TCP {candidate.EstablishedTcpConnectionCount}  ↓{ToMb(candidate.NetworkReceiveBytesPerSecond):0.0}/s ↑{ToMb(candidate.NetworkSendBytesPerSecond):0.0}/s"))
             .ToArray();
 
         BackgroundCandidateCombo.ItemsSource = _backgroundCandidateChoices;
@@ -734,7 +734,7 @@ public partial class MainWindow : Window
         return bytes / 1024d / 1024d / 1024d;
     }
 
-    private static double ToMb(long bytes)
+    private static double ToMb(double bytes)
     {
         return bytes / 1024d / 1024d;
     }

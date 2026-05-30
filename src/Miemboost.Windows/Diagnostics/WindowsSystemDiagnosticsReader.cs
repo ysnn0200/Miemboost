@@ -17,7 +17,7 @@ public sealed class WindowsSystemDiagnosticsReader(
         var cpu = await CaptureCpuAsync(cancellationToken).ConfigureAwait(false);
         var gpu = await CaptureGpuAsync(cancellationToken).ConfigureAwait(false);
         var memory = CaptureMemory(capturedAt);
-        var networkStats = CaptureProcessNetworkStats();
+        var networkStats = await CaptureProcessNetworkStatsAsync(cancellationToken).ConfigureAwait(false);
         var processes = CaptureProcesses(networkStats);
         var adapters = CaptureNetworkAdapters();
 
@@ -145,7 +145,9 @@ public sealed class WindowsSystemDiagnosticsReader(
                 TotalProcessorTime: process.TotalProcessorTime,
                 IsProtectedCandidate: _protectedProcessClassifier.IsProtectedCandidate(name, path),
                 TcpConnectionCount: stats.TotalConnections,
-                EstablishedTcpConnectionCount: stats.EstablishedConnections);
+                EstablishedTcpConnectionCount: stats.EstablishedConnections,
+                NetworkReceiveBytesPerSecond: stats.ReceiveBytesPerSecond,
+                NetworkSendBytesPerSecond: stats.SendBytesPerSecond);
         }
         catch
         {
@@ -157,23 +159,65 @@ public sealed class WindowsSystemDiagnosticsReader(
         }
     }
 
-    private static IReadOnlyDictionary<int, ProcessNetworkStats> CaptureProcessNetworkStats()
+    private static async Task<IReadOnlyDictionary<int, ProcessNetworkStats>> CaptureProcessNetworkStatsAsync(
+        CancellationToken cancellationToken)
     {
         try
         {
-            var rows = TcpConnectionTableReader.ReadIpv4();
-            return rows
+            var first = TcpConnectionTableReader.ReadIpv4();
+            var firstAt = Stopwatch.GetTimestamp();
+
+            await Task.Delay(TimeSpan.FromMilliseconds(250), cancellationToken).ConfigureAwait(false);
+
+            var second = TcpConnectionTableReader.ReadIpv4();
+            var secondAt = Stopwatch.GetTimestamp();
+            var elapsedSeconds = (secondAt - firstAt) / (double)Stopwatch.Frequency;
+            var firstByKey = first.ToDictionary(row => row.Key, row => row);
+
+            return second
                 .GroupBy(row => row.ProcessId)
                 .ToDictionary(
                     group => group.Key,
-                    group => new ProcessNetworkStats(
-                        TotalConnections: group.Count(),
-                        EstablishedConnections: group.Count(row => row.State == TcpState.Established)));
+                    group =>
+                    {
+                        var receiveBytesPerSecond = 0d;
+                        var sendBytesPerSecond = 0d;
+
+                        if (elapsedSeconds > 0)
+                        {
+                            foreach (var row in group)
+                            {
+                                if (!firstByKey.TryGetValue(row.Key, out var previous))
+                                {
+                                    continue;
+                                }
+
+                                receiveBytesPerSecond += CalculateRate(previous.BytesReceived, row.BytesReceived, elapsedSeconds);
+                                sendBytesPerSecond += CalculateRate(previous.BytesSent, row.BytesSent, elapsedSeconds);
+                            }
+                        }
+
+                        return new ProcessNetworkStats(
+                            TotalConnections: group.Count(),
+                            EstablishedConnections: group.Count(row => row.State == TcpState.Established),
+                            ReceiveBytesPerSecond: receiveBytesPerSecond,
+                            SendBytesPerSecond: sendBytesPerSecond);
+                    });
         }
         catch
         {
             return new Dictionary<int, ProcessNetworkStats>();
         }
+    }
+
+    private static double CalculateRate(
+        ulong previous,
+        ulong current,
+        double elapsedSeconds)
+    {
+        return current >= previous
+            ? (current - previous) / elapsedSeconds
+            : 0;
     }
 
     private static string? TryReadMainModulePath(Process process)
@@ -197,11 +241,22 @@ public sealed class WindowsSystemDiagnosticsReader(
 
     private readonly record struct ProcessNetworkStats(
         int TotalConnections,
-        int EstablishedConnections);
+        int EstablishedConnections,
+        double ReceiveBytesPerSecond,
+        double SendBytesPerSecond);
 
     private readonly record struct TcpConnectionRow(
         int ProcessId,
-        TcpState State);
+        TcpState State,
+        TcpConnectionKey Key,
+        ulong BytesReceived,
+        ulong BytesSent);
+
+    private readonly record struct TcpConnectionKey(
+        uint LocalAddress,
+        uint LocalPort,
+        uint RemoteAddress,
+        uint RemotePort);
 
     private static class TcpConnectionTableReader
     {
@@ -249,9 +304,14 @@ public sealed class WindowsSystemDiagnosticsReader(
                 for (var index = 0; index < rowCount; index++)
                 {
                     var row = Marshal.PtrToStructure<MibTcpRowOwnerPid>(IntPtr.Add(rowPointer, index * rowSize));
+                    var key = new TcpConnectionKey(row.LocalAddr, row.LocalPort, row.RemoteAddr, row.RemotePort);
+                    var counters = ReadConnectionCounters(row);
                     rows.Add(new TcpConnectionRow(
                         ProcessId: (int)row.OwningPid,
-                        State: row.State));
+                        State: row.State,
+                        Key: key,
+                        BytesReceived: counters.BytesReceived,
+                        BytesSent: counters.BytesSent));
                 }
 
                 return rows;
@@ -270,6 +330,88 @@ public sealed class WindowsSystemDiagnosticsReader(
             int ipVersion,
             int tableClass,
             int reserved);
+
+        private static TcpConnectionCounters ReadConnectionCounters(MibTcpRowOwnerPid ownerRow)
+        {
+            var tcpRow = new MibTcpRow(
+                ownerRow.State,
+                ownerRow.LocalAddr,
+                ownerRow.LocalPort,
+                ownerRow.RemoteAddr,
+                ownerRow.RemotePort);
+            var data = new TcpEstatsDataRod();
+            var size = Marshal.SizeOf<TcpEstatsDataRod>();
+            var status = GetPerTcpConnectionEStats(
+                ref tcpRow,
+                TcpConnectionEstatsData,
+                IntPtr.Zero,
+                0,
+                0,
+                IntPtr.Zero,
+                0,
+                0,
+                ref data,
+                0,
+                (uint)size);
+
+            return status == 0
+                ? new TcpConnectionCounters(data.DataBytesIn, data.DataBytesOut)
+                : new TcpConnectionCounters(0, 0);
+        }
+
+        private const int TcpConnectionEstatsData = 1;
+
+        [DllImport("iphlpapi.dll", SetLastError = true)]
+        private static extern int GetPerTcpConnectionEStats(
+            ref MibTcpRow row,
+            int estatsType,
+            IntPtr rw,
+            uint rwVersion,
+            uint rwSize,
+            IntPtr ros,
+            uint rosVersion,
+            uint rosSize,
+            ref TcpEstatsDataRod rod,
+            uint rodVersion,
+            uint rodSize);
+
+        private readonly record struct TcpConnectionCounters(
+            ulong BytesReceived,
+            ulong BytesSent);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private readonly struct MibTcpRow(
+            TcpState state,
+            uint localAddr,
+            uint localPort,
+            uint remoteAddr,
+            uint remotePort)
+        {
+            public readonly TcpState State = state;
+            public readonly uint LocalAddr = localAddr;
+            public readonly uint LocalPort = localPort;
+            public readonly uint RemoteAddr = remoteAddr;
+            public readonly uint RemotePort = remotePort;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct TcpEstatsDataRod
+        {
+            public ulong DataBytesOut;
+            public ulong DataSegsOut;
+            public ulong DataBytesIn;
+            public ulong DataSegsIn;
+            public ulong SegsOut;
+            public ulong SegsIn;
+            public uint SoftErrors;
+            public uint SoftErrorReason;
+            public uint SndUna;
+            public uint SndNxt;
+            public uint SndMax;
+            public ulong ThruBytesAcked;
+            public uint RcvNxt;
+            public ulong ThruBytesReceived;
+        }
 
         [StructLayout(LayoutKind.Sequential)]
         private readonly struct MibTcpRowOwnerPid
