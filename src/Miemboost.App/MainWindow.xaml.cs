@@ -121,7 +121,7 @@ public partial class MainWindow : Window
         _diagnosticsTimer?.Stop();
         _diagnosticsTimer = new DispatcherTimer
         {
-            Interval = TimeSpan.FromSeconds(2)
+            Interval = TimeSpan.FromSeconds(1)
         };
         _diagnosticsTimer.Tick += async (_, _) => await RefreshDiagnosticsAsync();
         _diagnosticsTimer.Start();
