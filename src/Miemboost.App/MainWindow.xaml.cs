@@ -661,6 +661,7 @@ public partial class MainWindow : Window
 
         _activeGameProfile = profile;
         _activeGameProfileId = profile.Id;
+        ApplyActiveProfileRecommendedMode();
         UpdateActiveProfileText();
         ShowBoostPreview();
     }
@@ -682,6 +683,7 @@ public partial class MainWindow : Window
         _activeGameProfile = match.Profile;
         _activeGameProfileId = match.Profile.Id;
         _selectedGameProcessId = match.ProcessId;
+        ApplyActiveProfileRecommendedMode();
         if (GameProcessCombo.ItemsSource is IEnumerable<ProcessChoice> processChoices)
         {
             GameProcessCombo.SelectedItem = processChoices
@@ -689,6 +691,17 @@ public partial class MainWindow : Window
         }
         UpdateActiveProfileText();
         ShowBoostPreview();
+    }
+
+    private void ApplyActiveProfileRecommendedMode()
+    {
+        if (_activeGameProfile is null)
+        {
+            return;
+        }
+
+        _selectedBoostMode = _activeGameProfile.RecommendedMode;
+        UpdateBoostModeButtons();
     }
 
     private void UpdateActiveProfileText()
