@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Net.NetworkInformation;
 using System.Runtime.InteropServices;
 using Miemboost.Core.Diagnostics;
@@ -79,7 +80,18 @@ public sealed class WindowsSystemDiagnosticsReader(
             await Task.Delay(TimeSpan.FromMilliseconds(150), cancellationToken).ConfigureAwait(false);
 
             var usage = counters.Sum(counter => counter.NextValue());
-            return new GpuSnapshot(Math.Clamp(usage, 0, 100), true, "Windows GPU Engine", DateTimeOffset.UtcNow);
+            var adapterMemory = CaptureGpuAdapterMemory();
+            var vendorMetrics = TryCaptureNvidiaGpuMetrics();
+            return new GpuSnapshot(
+                UsagePercent: Math.Clamp(usage, 0, 100),
+                IsAvailable: true,
+                Source: vendorMetrics is null ? "Windows GPU Engine" : "Windows GPU Engine + nvidia-smi",
+                CapturedAt: DateTimeOffset.UtcNow,
+                TemperatureCelsius: vendorMetrics?.TemperatureCelsius,
+                DedicatedMemoryUsedBytes: vendorMetrics?.MemoryUsedBytes ?? adapterMemory.DedicatedUsageBytes,
+                DedicatedMemoryTotalBytes: vendorMetrics?.MemoryTotalBytes,
+                CoreClockMHz: vendorMetrics?.CoreClockMHz,
+                MemoryClockMHz: vendorMetrics?.MemoryClockMHz);
         }
         catch
         {
@@ -93,6 +105,118 @@ public sealed class WindowsSystemDiagnosticsReader(
             }
         }
     }
+
+    private static GpuAdapterMemorySnapshot CaptureGpuAdapterMemory()
+    {
+        const string categoryName = "GPU Adapter Memory";
+
+        try
+        {
+            if (!PerformanceCounterCategory.Exists(categoryName))
+            {
+                return new GpuAdapterMemorySnapshot(null, null);
+            }
+
+            var category = new PerformanceCounterCategory(categoryName);
+            var dedicatedUsage = ReadGpuAdapterMemoryCounter(category, categoryName, "Dedicated Usage");
+            var sharedUsage = ReadGpuAdapterMemoryCounter(category, categoryName, "Shared Usage");
+            return new GpuAdapterMemorySnapshot(dedicatedUsage, sharedUsage);
+        }
+        catch
+        {
+            return new GpuAdapterMemorySnapshot(null, null);
+        }
+    }
+
+    private static double? ReadGpuAdapterMemoryCounter(
+        PerformanceCounterCategory category,
+        string categoryName,
+        string counterName)
+    {
+        try
+        {
+            return category.GetInstanceNames()
+                .Select(instance => new PerformanceCounter(categoryName, counterName, instance, readOnly: true))
+                .Select(counter =>
+                {
+                    using (counter)
+                    {
+                        return (double)counter.NextValue();
+                    }
+                })
+                .Sum();
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static NvidiaGpuMetrics? TryCaptureNvidiaGpuMetrics()
+    {
+        try
+        {
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "nvidia-smi.exe",
+                Arguments = "--query-gpu=temperature.gpu,clocks.gr,clocks.mem,memory.used,memory.total --format=csv,noheader,nounits",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(startInfo);
+            if (process is null || !process.WaitForExit(1500) || process.ExitCode != 0)
+            {
+                return null;
+            }
+
+            var output = process.StandardOutput.ReadToEnd();
+            var firstLine = output
+                .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(firstLine))
+            {
+                return null;
+            }
+
+            var values = firstLine.Split(',', StringSplitOptions.TrimEntries);
+            if (values.Length < 5)
+            {
+                return null;
+            }
+
+            return new NvidiaGpuMetrics(
+                TemperatureCelsius: ParseNullableDouble(values[0]),
+                CoreClockMHz: ParseNullableDouble(values[1]),
+                MemoryClockMHz: ParseNullableDouble(values[2]),
+                MemoryUsedBytes: ParseNullableDouble(values[3]) * 1024d * 1024d,
+                MemoryTotalBytes: ParseNullableDouble(values[4]) * 1024d * 1024d);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static double? ParseNullableDouble(string text)
+    {
+        return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out var value)
+            ? value
+            : null;
+    }
+
+    private sealed record GpuAdapterMemorySnapshot(
+        double? DedicatedUsageBytes,
+        double? SharedUsageBytes);
+
+    private sealed record NvidiaGpuMetrics(
+        double? TemperatureCelsius,
+        double? MemoryUsedBytes,
+        double? MemoryTotalBytes,
+        double? CoreClockMHz,
+        double? MemoryClockMHz);
 
     private static double ReadTotalProcessorMilliseconds(Process process)
     {

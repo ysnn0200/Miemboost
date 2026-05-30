@@ -206,7 +206,7 @@ public partial class MainWindow : Window
 
         GpuText.Text = report.System.Gpu.IsAvailable ? $"{report.System.Gpu.UsagePercent:0}%" : "--%";
         GpuDetailText.Text = report.System.Gpu.IsAvailable
-            ? report.System.Gpu.Source
+            ? FormatGpuDetails(report.System.Gpu)
             : "当前系统未提供 GPU 计数器";
         GpuStatusText.Text = report.System.Gpu.IsAvailable ? "良好" : "不可用";
         GpuStatusDot.Fill = report.System.Gpu.IsAvailable
@@ -749,6 +749,36 @@ public partial class MainWindow : Window
             DiagnosticSeverity.Critical => "异常",
             _ => "未知"
         };
+    }
+
+    private static string FormatGpuDetails(GpuSnapshot gpu)
+    {
+        var details = new List<string> { gpu.Source };
+
+        if (gpu.DedicatedMemoryUsedBytes is not null)
+        {
+            var memoryText = gpu.DedicatedMemoryTotalBytes is null
+                ? $"显存 {ToMb(gpu.DedicatedMemoryUsedBytes.Value):0} MB"
+                : $"显存 {ToMb(gpu.DedicatedMemoryUsedBytes.Value):0} / {ToMb(gpu.DedicatedMemoryTotalBytes.Value):0} MB";
+            details.Add(memoryText);
+        }
+
+        if (gpu.TemperatureCelsius is not null)
+        {
+            details.Add($"温度 {gpu.TemperatureCelsius:0}°C");
+        }
+
+        if (gpu.CoreClockMHz is not null)
+        {
+            details.Add($"核心 {gpu.CoreClockMHz:0} MHz");
+        }
+
+        if (gpu.MemoryClockMHz is not null)
+        {
+            details.Add($"显存频率 {gpu.MemoryClockMHz:0} MHz");
+        }
+
+        return string.Join("  ", details);
     }
 
     private static string ToChineseRisk(RiskLevel riskLevel)
